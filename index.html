@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1222">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Garage to Exit">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Garage to Exit — Idle Startup Prototype</title>
+<style>
+  :root{
+    --bg:#0f1222; --card:#181c33; --card2:#1f2442; --line:#2a3058;
+    --text:#eef0ff; --muted:#9aa0c3; --accent:#7c5cff; --accent2:#20d3b0;
+    --gold:#ffc94d; --danger:#ff5c7a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans Hebrew",Arial,sans-serif;
+    -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  body{min-height:100vh;display:flex;justify-content:center;overflow-x:hidden}
+  #app{width:100%;max-width:480px;padding:calc(10px + env(safe-area-inset-top)) 12px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}
+  button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulation}
+  button:disabled{cursor:default}
+  .ib{width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,.1);font-size:12px;line-height:20px;text-align:center;color:var(--muted);vertical-align:middle;flex:none}
+
+  /* Header */
+  .top{background:linear-gradient(145deg,#2a1f66,#151a3a 60%);border:1px solid var(--line);border-radius:18px;padding:14px 16px}
+  .top .row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+  .top .right{display:flex;gap:6px;align-items:center;margin-inline-start:auto}
+  .stage{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.08);padding:5px 10px;border-radius:999px;font-weight:600;font-size:14px}
+  .stage .info{opacity:.6;font-size:12px}
+  .exit{background:var(--card2);border:1px solid var(--line);padding:7px 12px;border-radius:999px;font-weight:700;font-size:13px;white-space:nowrap}
+  .exit.ready{background:linear-gradient(90deg,var(--gold),#ff9d4d);color:#241a00;border-color:transparent}
+  .exit.hot{animation:pulse 1.4s infinite}
+  .help{width:32px;height:32px;border-radius:50%;background:var(--card2);border:1px solid var(--line);font-weight:800;font-size:15px}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,201,77,.6)}50%{box-shadow:0 0 0 8px rgba(255,201,77,0)}}
+  .lbl{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px;margin-top:10px}
+  .cash{font-size:36px;font-weight:800;letter-spacing:-.5px;font-variant-numeric:tabular-nums;line-height:1.15}
+  .income{color:var(--accent2);font-weight:600;font-size:15px;font-variant-numeric:tabular-nums}
+  .income .x2{background:var(--accent2);color:#002b23;border-radius:6px;padding:0 6px;margin-inline-start:6px;font-size:12px}
+  .val{color:var(--muted);font-size:13px;margin-top:6px}
+  .val b{color:var(--text)}
+  .bar{height:6px;background:rgba(255,255,255,.1);border-radius:6px;margin-top:6px;overflow:hidden}
+  .bar>div{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .3s}
+  [dir="rtl"] .bar>div{background:linear-gradient(270deg,var(--accent),var(--accent2))}
+
+  /* Actions */
+  .actions{display:grid;grid-template-columns:1.1fr 1fr;gap:10px}
+  .tap{background:linear-gradient(160deg,var(--accent),#5a3be0);border-radius:18px;padding:14px 10px;display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:800;font-size:17px;box-shadow:0 6px 0 #3d26a8;transition:transform .05s}
+  .tap:active{transform:translateY(4px);box-shadow:0 2px 0 #3d26a8}
+  .tap .ic{font-size:30px}
+  .tap small{font-weight:600;opacity:.85;font-size:13px}
+  .boost{background:var(--card);border:1px dashed var(--accent2);border-radius:18px;padding:10px;text-align:center;font-weight:700;font-size:14px;display:flex;flex-direction:column;justify-content:center;gap:4px}
+  .boost small{font-weight:500;color:var(--muted);font-size:12px;line-height:1.35}
+  .boost.active{border-style:solid;background:rgba(32,211,176,.08)}
+  .boost:disabled{opacity:.6}
+  .hint{color:var(--gold);font-size:13px;text-align:center}
+  .hint:empty{display:none}
+
+  /* Team section */
+  .sect{display:flex;align-items:center;gap:6px;font-weight:800;font-size:15px;margin-top:2px}
+  .modes{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .modes span{color:var(--muted);font-size:12px;margin-inline-end:auto}
+  .modes button{background:var(--card);border:1px solid var(--line);padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700;color:var(--muted)}
+  .modes button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+  /* Cards */
+  #gens{display:flex;flex-direction:column;gap:8px}
+  .gen{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center}
+  .gen .ico{font-size:28px;text-align:center}
+  .gen .name{font-weight:700;font-size:15px}
+  .gen .own{color:var(--accent2);font-weight:700;font-size:13px}
+  .gen .desc{color:var(--muted);font-size:12px}
+  .gen .stat{font-size:12px;margin-top:3px;color:#c8ccec}
+  .gen .bl{font-size:11px;color:var(--gold);margin-top:3px}
+  .mbar{height:4px;background:rgba(255,255,255,.08);border-radius:4px;margin-top:5px;overflow:hidden}
+  .mbar>div{height:100%;background:var(--gold);width:0}
+  .buy{background:var(--accent2);color:#00261f;border-radius:12px;padding:8px 10px;min-width:86px;display:flex;flex-direction:column;align-items:center;font-weight:800}
+  .buy .bn{font-size:12px;opacity:.85}
+  .buy .bc{font-size:14px;font-variant-numeric:tabular-nums}
+  /* Not affordable yet: still tappable (explains what is missing) and fills up as cash grows */
+  .buy.cant{color:var(--muted);background:linear-gradient(90deg,rgba(32,211,176,.28) var(--p,0%),var(--card2) var(--p,0%))}
+  [dir="rtl"] .buy.cant{background:linear-gradient(270deg,rgba(32,211,176,.28) var(--p,0%),var(--card2) var(--p,0%))}
+  .buy.shake{animation:shake .35s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+  .gen.locked{opacity:.55;grid-template-columns:44px 1fr}
+  .gen.locked .ico{filter:grayscale(1) brightness(.4)}
+
+  footer{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--muted);font-size:12px;padding:4px 2px;flex-wrap:wrap}
+  footer b{color:var(--gold)}
+  footer .xp{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+  footer .tools{display:flex;gap:6px;align-items:center}
+  .small{background:transparent;border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-size:11px;color:var(--muted)}
+  .small[hidden]{display:none}
+  #installBtn{border-color:var(--accent2);color:var(--accent2)}
+
+  /* Floating text & toasts */
+  .float{position:fixed;pointer-events:none;font-weight:800;color:var(--gold);font-size:18px;animation:floatUp .9s ease-out forwards;z-index:50;text-shadow:0 2px 6px rgba(0,0,0,.5)}
+  @keyframes floatUp{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-70px)}}
+  #toasts{position:fixed;top:calc(10px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;z-index:60;width:min(92vw,440px);pointer-events:none}
+  .toast{background:#262c55;border:1px solid var(--accent);border-radius:12px;padding:10px 14px;font-weight:600;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:tin .25s ease-out;line-height:1.45}
+  .toast.tip{background:#3a3115;border-color:var(--gold);color:#fff3cf}
+  @keyframes tin{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+
+  /* Modals */
+  .modal{position:fixed;inset:0;background:rgba(5,7,18,.78);display:none;align-items:center;justify-content:center;z-index:40;padding:20px}
+  .modal.show{display:flex}
+  .sheet{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;width:100%;max-width:420px;max-height:88vh;overflow:auto}
+  .sheet h2{font-size:20px;margin-bottom:8px}
+  .sheet p{color:#c8ccec;font-size:14px;line-height:1.55;margin-bottom:10px}
+  .sheet .big{font-size:30px;font-weight:800;color:var(--gold);margin:6px 0 12px}
+  .btns{display:flex;gap:8px;margin-top:12px}
+  .btns button{flex:1;padding:12px;border-radius:12px;font-weight:800}
+  .b-pri{background:var(--accent);color:#fff}
+  .b-sec{background:var(--card2);border:1px solid var(--line)}
+  .b-gold{background:linear-gradient(90deg,var(--gold),#ff9d4d);color:#241a00}
+  .b-pri:disabled,.b-gold:disabled{opacity:.4}
+  .kv{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:13px;margin:8px 0}
+  .kv div:nth-child(odd){color:var(--muted)}
+  .kv div:nth-child(even){text-align:end;font-variant-numeric:tabular-nums}
+  .log{font-family:ui-monospace,Consolas,monospace;font-size:11px;background:#0b0e1c;border-radius:10px;padding:8px;max-height:180px;overflow:auto;color:#a9b0dd;white-space:pre-wrap;user-select:text;direction:ltr;text-align:left}
+  .devbtns{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+  .devbtns button{background:var(--card2);border:1px solid var(--line);padding:9px;border-radius:10px;font-size:12px;font-weight:700}
+
+  /* Intro, terms, stages */
+  .hero{font-size:38px;text-align:center;margin-bottom:6px;white-space:nowrap;direction:ltr;unicode-bidi:isolate}
+  .intro h2{text-align:center;font-size:24px}
+  .intro p{text-align:center}
+  .langpick{display:flex;gap:6px;justify-content:center;align-items:center;margin:10px 0 4px}
+  .langpick span{color:var(--muted);font-size:13px;margin-inline-end:4px}
+  .langpick button{background:var(--card2);border:1px solid var(--line);padding:7px 16px;border-radius:999px;font-weight:700;font-size:14px;color:var(--muted)}
+  .langpick button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  .helplist,.stages{display:flex;flex-direction:column;gap:8px;margin:6px 0 4px}
+  .hitem{display:grid;grid-template-columns:34px 1fr;gap:8px;align-items:start;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:10px}
+  .hitem .hi{font-size:22px;text-align:center}
+  .hitem .ht{display:block;font-size:14px;margin-bottom:2px}
+  .hitem .hd{color:#c8ccec;font-size:13px;line-height:1.5}
+  .srow{display:grid;grid-template-columns:30px 1fr auto;gap:8px;align-items:center;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+  .srow .si{font-size:20px;text-align:center}
+  .srow b{display:block;font-size:14px}
+  .srow .sd{color:#c8ccec;font-size:12px;line-height:1.45}
+  .srow .sv{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .srow.cur{border-color:var(--gold);background:#2a2614}
+  .srow.done{opacity:.6}
+
+  /* Fake ad */
+  #ad{position:fixed;inset:0;background:#000;z-index:70;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px}
+  #ad.show{display:flex}
+  #ad .tag{font-size:11px;letter-spacing:2px;color:#888;border:1px solid #444;padding:3px 8px;border-radius:6px}
+  #ad h3{font-size:22px}
+  #ad p{color:#aaa;font-size:14px;max-width:320px}
+  #ad .count{font-size:48px;font-weight:800;color:var(--accent2)}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="row">
+      <button class="stage" id="stageBtn" data-i18n-aria="stagesAria"><span id="stageIcon"></span><span id="stageName"></span><span class="info">ⓘ</span></button>
+      <div class="right">
+        <button id="helpBtn" class="help" data-i18n-aria="helpAria">?</button>
+        <button id="exitBtn" class="exit" data-i18n-aria="exitAria"></button>
+      </div>
+    </div>
+    <div class="lbl"><span data-i18n="cashLbl"></span><button class="ib" data-info="numbers" data-i18n-aria="infoAria">i</button></div>
+    <div class="cash" id="cash">$0</div>
+    <div class="income" id="income"></div>
+    <div class="val"><span data-i18n="valueLbl"></span> <b id="valuation">$0</b></div>
+    <div class="val" id="nextStage"></div>
+    <div class="bar"><div id="stageBar"></div></div>
+  </header>
+
+  <section class="actions">
+    <button id="tapBtn" class="tap" data-i18n-aria="shipAria"><span class="ic">💻</span><span data-i18n="ship"></span><small id="tapValue"></small></button>
+    <button id="boostBtn" class="boost"><span data-i18n="boostTitle"></span><small id="boostText"></small></button>
+  </section>
+  <div id="hint" class="hint"></div>
+
+  <div class="sect"><span data-i18n="teamTitle"></span><button class="ib" data-info="team" data-i18n-aria="infoAria">i</button></div>
+  <div class="modes" id="modes">
+    <span data-i18n="modesLbl"></span>
+    <button data-m="1">1</button><button data-m="10">10</button><button data-m="100">100</button><button data-m="max" data-i18n="modeMax"></button>
+  </div>
+
+  <main id="gens"></main>
+
+  <footer>
+    <div class="xp"><span data-i18n="xpLbl"></span> <b id="rep">0</b> <span id="repBonus"></span><button class="ib" data-info="xp" data-i18n-aria="infoAria">i</button></div>
+    <div class="tools">
+      <button class="small" id="installBtn" data-i18n="installBtn" hidden></button>
+      <button class="small" id="shareBtn" data-i18n="shareBtn" hidden></button>
+      <button class="small" id="langBtn"></button>
+      <span data-i18n="version"></span>
+      <button class="small" id="devBtn" hidden>DEV</button>
+    </div>
+  </footer>
+</div>
+
+<div id="toasts"></div>
+
+<!-- Offline earnings -->
+<div class="modal" id="offlineModal"><div class="sheet">
+  <h2 data-i18n="offTitle"></h2>
+  <p id="offlineText"></p>
+  <div class="big" id="offlineAmount"></div>
+  <div class="btns">
+    <button class="b-sec" id="offlineCollect" data-i18n="offCollect"></button>
+    <button class="b-gold" id="offlineDouble" data-i18n="offDouble"></button>
+  </div>
+</div></div>
+
+<!-- Sell company (prestige) -->
+<div class="modal" id="exitModal"><div class="sheet">
+  <h2 data-i18n="exitTitle"></h2>
+  <p id="exitText"></p>
+  <div class="kv" id="exitKv"></div>
+  <p style="color:var(--muted);font-size:12px" data-i18n="exitNote"></p>
+  <div class="btns">
+    <button class="b-sec" id="exitCancel" data-i18n="exitCancel"></button>
+    <button class="b-gold" id="exitConfirm" data-i18n="exitConfirm"></button>
+  </div>
+</div></div>
+
+<!-- Dev panel -->
+<div class="modal" id="devModal"><div class="sheet">
+  <h2 data-i18n="devTitle"></h2>
+  <div class="kv" id="devKv"></div>
+  <div class="devbtns">
+    <button id="dSkip10" data-i18n="dSkip10"></button>
+    <button id="dSkip60" data-i18n="dSkip60"></button>
+    <button id="dSpeed"></button>
+    <button id="dOffline" data-i18n="dOffline"></button>
+    <button id="dReplay" data-i18n="dReplay"></button>
+    <button id="dReset"></button>
+    <button id="dClose" data-i18n="dClose"></button>
+  </div>
+  <div style="font-size:12px;color:var(--muted);margin:6px 0 4px" data-i18n="dEvents"></div>
+  <div class="log" id="devLog"></div>
+</div></div>
+
+<!-- Company stages -->
+<div class="modal" id="stagesModal"><div class="sheet">
+  <h2 data-i18n="stagesTitle"></h2>
+  <p data-i18n="stagesIntro"></p>
+  <div class="stages" id="stagesList"></div>
+  <div class="btns"><button class="b-pri" id="stagesClose" data-i18n="helpClose"></button></div>
+</div></div>
+
+<!-- Terms & explanations (full list or a section) -->
+<div class="modal" id="helpModal"><div class="sheet">
+  <h2 id="helpTitle"></h2>
+  <div class="helplist" id="helpList"></div>
+  <div class="btns"><button class="b-pri" id="helpClose" data-i18n="helpClose"></button></div>
+</div></div>
+
+<!-- First-launch welcome (kept last so it sits on top of other modals) -->
+<div class="modal" id="introModal"><div class="sheet intro">
+  <div class="hero">🔧 → 🦄 → 💰</div>
+  <h2 data-i18n="gameName"></h2>
+  <p data-i18n="introText"></p>
+  <div class="langpick" id="langPick">
+    <span data-i18n="introLang"></span>
+    <button data-lang="en">English</button><button data-lang="he">עברית</button>
+  </div>
+  <div class="btns">
+    <button class="b-sec" id="introHelp" data-i18n="introHelp"></button>
+    <button class="b-pri" id="introStart" data-i18n="introStart"></button>
+  </div>
+</div></div>
+
+<!-- Fake rewarded ad -->
+<div id="ad">
+  <div class="tag" data-i18n="adTag"></div>
+  <h3 data-i18n="adTitle"></h3>
+  <p data-i18n="adText"></p>
+  <div class="count" id="adCount">3</div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ================= Config (economy) ================= */
+const KEY = 'g2e_save_v1';
+const R = 1.15;                         // cost growth per unit
+const VAL_MULT = 1e4;                   // company value = base income/sec × this
+const REP_BONUS = 0.10;                 // +10% income per experience point
+const OFFLINE_CAP_SEC = 2 * 3600;       // offline earnings cap
+const BOOST_STEP_MS = 30 * 60 * 1000;   // each ad adds 30 min of double income
+const BOOST_MAX_MS = 4 * 3600 * 1000;   // stack up to 4 hours
+const MILESTONES = [10, 25, 50, 100, 150, 200, 300, 400, 500];
+const START_CASH = 10;                  // enough for the first Intern, so the first action is a hire
+const SELL_STAGE = 2;                   // selling the company unlocks at this stage index
+
+const GENS = [
+  { id:'intern', icon:'🧑‍🎓', cost:10,    inc:0.2 },
+  { id:'junior', icon:'👩‍💻', cost:120,   inc:1.5 },
+  { id:'senior', icon:'🧙',    cost:1300,  inc:10 },
+  { id:'cloud',  icon:'☁️',    cost:14e3,  inc:60 },
+  { id:'sales',  icon:'📞',    cost:15e4,  inc:350 },
+  { id:'mkt',    icon:'📣',    cost:1.6e6, inc:2000 },
+  { id:'ai',     icon:'🤖',    cost:2e7,   inc:12000 },
+  { id:'global', icon:'🌍',    cost:3.3e8, inc:8e4 },
+];
+
+const STAGES = [
+  { id:'garage',  v:0,    icon:'🔧' },
+  { id:'preseed', v:5e4,  icon:'🌱' },
+  { id:'seed',    v:1e6,  icon:'🌿' },
+  { id:'a',       v:1e7,  icon:'📈' },
+  { id:'b',       v:1e8,  icon:'🚀' },
+  { id:'unicorn', v:1e9,  icon:'🦄' },
+  { id:'d',       v:1e10, icon:'🏢' },
+  { id:'ipo',     v:1e11, icon:'🔔' },
+];
+
+/* ================= Text (i18n) ================= */
+// Numbers and money are wrapped in Unicode isolates (LRI…PDI) so they stay
+// left-to-right inside Hebrew sentences.
+const iso = s => '⁦' + s + '⁩';
+
+const GEN_TXT = {
+  en: {
+    intern:['Intern','Runs on free pizza.'],
+    junior:['Junior Developer','Works fast, sometimes breaks things.'],
+    senior:['Senior Developer','Knows why the old code works.'],
+    cloud:['Cloud Servers','Grow without limit. So does the bill.'],
+    sales:['Sales Team','Always closing another deal.'],
+    mkt:['Marketing Campaign','Brings in new customers every day.'],
+    ai:['AI Lab','Makes the product smarter.'],
+    global:['Global Offices','Your company works around the clock.'],
+  },
+  he: {
+    intern:['מתמחה','רץ על פיצה חינם.'],
+    junior:['מפתח מתחיל','עובד מהר, לפעמים שובר דברים.'],
+    senior:['מפתח בכיר','יודע למה הקוד הישן עובד.'],
+    cloud:['שרתי ענן','גדלים בלי הגבלה. גם החשבון.'],
+    sales:['צוות מכירות','תמיד סוגרים עוד עסקה.'],
+    mkt:['קמפיין שיווק','מביא לקוחות חדשים כל יום.'],
+    ai:['מעבדת בינה מלאכותית','המוצר נהיה חכם יותר.'],
+    global:['משרדים בעולם','החברה עובדת מסביב לשעון.'],
+  },
+};
+
+const STAGE_TXT = {
+  en: { garage:'Garage', preseed:'First Investor', seed:'First Funding Round', a:'Growing Company', b:'Expanding Company',
+        unicorn:'Billion-Dollar Company', d:'Tech Giant', ipo:'Stock Market (IPO)' },
+  he: { garage:'מוסך', preseed:'משקיע ראשון', seed:'גיוס ראשון', a:'חברה צומחת', b:'חברה מתרחבת',
+        unicorn:'חברת מיליארד', d:'ענקית טכנולוגיה', ipo:'הנפקה בבורסה' },
+};
+
+const STAGE_DESC = {
+  en: {
+    garage:'Just you, a laptop and an idea.',
+    preseed:'A private investor believes in you and puts in the first money.',
+    seed:'Your first official funding round. From here you can sell the company.',
+    a:'Investors fund your growth: a real team and first customers.',
+    b:'You enter new markets and close big deals.',
+    unicorn:'Worth a billion dollars. In tech this is called a "unicorn".',
+    d:'One of the biggest companies in the field.',
+    ipo:'Your company’s shares trade on the stock market.',
+  },
+  he: {
+    garage:'רק אתה, מחשב נייד ורעיון.',
+    preseed:'משקיע פרטי מאמין בך ומכניס את הכסף הראשון.',
+    seed:'סבב הגיוס הרשמי הראשון. מכאן אפשר למכור את החברה.',
+    a:'משקיעים מממנים את הצמיחה: צוות אמיתי ולקוחות ראשונים.',
+    b:'החברה נכנסת לשווקים חדשים וסוגרת עסקאות גדולות.',
+    unicorn:'שווי של מיליארד דולר. בהייטק קוראים לזה "יוניקורן".',
+    d:'אחת החברות הגדולות בתחום.',
+    ipo:'מניות החברה נסחרות בבורסה.',
+  },
+};
+
+// Glossary: every term in the game with a plain explanation.
+const TERMS = {
+  en: {
+    tap:['💻','Write code','Each tap earns money right away. A tap is worth more as your income grows.'],
+    hire:['👥','Hiring','Every employee earns money every second, even while you are not playing. New kinds of employees unlock as the company earns more.'],
+    cash:['💵','Cash','The money you have right now. You spend it on hiring.'],
+    income:['⏱️','Income per second','How much money your team earns every second, automatically.'],
+    cost:['💲','Hiring price','Each hire makes the next one of the same kind 15% more expensive.'],
+    bonus:['⭐','Quantity bonus','When you have 10, 25, 50, 100 and so on of the same kind, their income doubles. The yellow bar on each card shows how many are left.'],
+    value:['🏷️','Company value','What the company is worth: income per second × 10,000. The value decides the company stage.'],
+    stage:['📈','Company stage','From the Garage to the stock market. The bar at the top shows how close the next stage is. Tap the stage badge to see all stages.'],
+    double:['📺','Double income','Watch a short ad to double your income for 30 minutes. You can stack up to 4 hours.'],
+    offline:['🌙','Earnings while away','When you are not playing, your team keeps earning for up to 2 hours. When you come back you can collect, or watch an ad to get 2 times more.'],
+    sell:['🏁','Selling the company','From the "First Funding Round" stage you can sell the company. You start a new company from zero and get experience points. Best time: when the button pulses.'],
+    xp:['🎓','Experience points','You get them when you sell a company. Each point increases income by 10%, forever, in every next company.'],
+  },
+  he: {
+    tap:['💻','כתוב קוד','כל לחיצה מכניסה כסף מיד. לחיצה שווה יותר ככל שההכנסה שלך גדלה.'],
+    hire:['👥','גיוס עובדים','כל עובד מכניס כסף בכל שנייה, גם כשאתה לא במשחק. סוגי עובדים חדשים נפתחים ככל שהחברה מרוויחה.'],
+    cash:['💵','כסף בקופה','הכסף שיש לך עכשיו. משתמשים בו כדי לגייס עובדים.'],
+    income:['⏱️','הכנסה לשנייה','כמה כסף הצוות שלך מרוויח בכל שנייה, באופן אוטומטי.'],
+    cost:['💲','מחיר גיוס','כל גיוס מייקר ב-15% את הגיוס הבא מאותו סוג.'],
+    bonus:['⭐','בונוס כמות','כשיש לך 10, 25, 50, 100 וכן הלאה מאותו סוג, ההכנסה מהם מוכפלת. הפס הצהוב בכל כרטיס מראה כמה נשאר.'],
+    value:['🏷️','שווי החברה','כמה החברה שווה: ההכנסה לשנייה כפול 10,000. השווי קובע את שלב החברה.'],
+    stage:['📈','שלב החברה','מהמוסך ועד הבורסה. הפס למעלה מראה כמה נשאר לשלב הבא. לחץ על תג השלב כדי לראות את כל השלבים.'],
+    double:['📺','הכנסה כפולה','צפה בפרסומת קצרה וההכנסה שלך תוכפל ל-30 דקות. אפשר לצבור עד 4 שעות.'],
+    offline:['🌙','רווח בזמן שלא היית','כשאתה לא במשחק, הצוות ממשיך להרוויח עד שעתיים. כשתחזור תוכל לאסוף, או לצפות בפרסומת ולקבל פי 2.'],
+    sell:['🏁','מכירת החברה','משלב "גיוס ראשון" אפשר למכור את החברה. מתחילים חברה חדשה מאפס ומקבלים נקודות ניסיון. הזמן הכי טוב: כשהכפתור מהבהב.'],
+    xp:['🎓','נקודות ניסיון','מקבלים אותן כשמוכרים חברה. כל נקודה מגדילה את ההכנסה ב-10%, לתמיד, בכל החברות הבאות.'],
+  },
+};
+TERMS.en.android = ['🤖','Android','In Chrome, open the menu (⋮) and tap "Install app" or "Add to Home screen".'];
+TERMS.en.iphone = ['🍎','iPhone','In Safari, tap Share and choose "Add to Home Screen".'];
+TERMS.en.offlinePlay = ['✈️','Works without internet','After installing, the game opens from the home screen and works without internet. Your progress is saved on the phone.'];
+TERMS.he.android = ['🤖','אנדרואיד','ב-Chrome פתח את התפריט (⋮) ובחר "התקן אפליקציה" או "הוסף למסך הבית".'];
+TERMS.he.iphone = ['🍎','אייפון','ב-Safari לחץ על "שתף" ובחר "הוסף למסך הבית".'];
+TERMS.he.offlinePlay = ['✈️','עובד בלי אינטרנט','אחרי ההתקנה המשחק נפתח ממסך הבית ועובד גם בלי אינטרנט. ההתקדמות נשמרת בטלפון.'];
+const TERM_GROUPS = {
+  install: ['android','iphone','offlinePlay'],
+  all: ['tap','hire','cash','income','cost','bonus','value','stage','double','offline','sell','xp'],
+  numbers: ['cash','income','value','stage'],
+  team: ['hire','cost','bonus'],
+  xp: ['sell','xp'],
+};
+
+const STR = {
+  en: {
+    docTitle:'Garage to Exit — Idle Startup Prototype',
+    gameName:'Garage to Exit',
+    ship:'Write code', shipAria:'Write code', perTap:'{v} per tap',
+    boostTitle:'📺 Double income',
+    boostIdle:'Watch a short ad: double income for 30 minutes',
+    boostActive:'Active · {t} left · watch again to add 30 minutes',
+    boostMax:'Active · {t} left (4 hour maximum)',
+    cashLbl:'Cash', incomeLine:'Income: {v} per second', doubleBadge:'doubled',
+    valueLbl:'Company value:', nextStage:'Next stage: {name}, at {v} value', topStage:'You reached the top stage',
+    teamTitle:'Your team', modesLbl:'Hire per tap:', modeMax:'Max',
+    owned:'You have {n}', cardRate:'Earning {v} per second', cardRateEach:'Each one earns {v} per second',
+    cardBonus:'{n} more to double their income', cardAll:'All quantity bonuses reached',
+    hireN:'Hire {n}', hireAria:'Hire {name}', lockedName:'Coming soon', lockedDesc:'Unlocks when this company has earned {v}',
+    exitLocked:'Sell company 🔒', exitGain:'Sell company {n}', exitAria:'Sell the company',
+    helpAria:'Terms and how to play', infoAria:'Explanation', stagesAria:'All company stages',
+    hintTap:'Tap "Write code" to earn money.', hintHire:'You have enough money: hire your first Intern below!',
+    xpLbl:'Experience points:', xpBonus:'(income bonus {p})', version:'v0.4', langBtn:'🌐 עברית',
+    installBtn:'📲 Install', shareBtn:'📤 Share', installTitle:'Install on your phone',
+    shareText:'Try my game: from a garage to a billion-dollar company', toastInstalled:'📲 The game is installed on your home screen!',
+    toastMilestone:'{icon} {name}: {m} reached! Their income is {k} times higher',
+    toastStage:'{icon} New stage: {name}!',
+    toastBoost:'📺 Double income is on for 30 minutes!', toastCollected:'Collected {v}',
+    toastExit:'🎉 Company sold! You got {r} experience points',
+    toastNeed:'You need {v} more. Tap "Write code" or wait for your team to earn it.',
+    tipFirstHire:'💡 Your intern earns money every second, even when you are not playing. Keep hiring!',
+    tipPreSeed:'💡 Tip: the "Double income" button doubles your income for 30 minutes in exchange for a short ad.',
+    tipExit:'💡 You can now sell the company and get experience points that increase your income forever. Waiting longer gives more. The button pulses when it is a good deal.',
+    offTitle:'Welcome back!', offText:'You were away for {t}{cap}. Meanwhile your team earned:',
+    offCap:' (we count up to 2 hours)', offCollect:'Collect', offDouble:'📺 Watch ad, collect 2 times more',
+    exitTitle:'Sell the company?',
+    exitLockedText:'You can sell the company from the "{stage}" stage (company value {v}). Keep growing!',
+    exitOffer:'A buyer wants to acquire your company. If you sell, you start a new company from zero and get experience points. Each point increases income by 10% forever.',
+    kvValuation:'Company value', kvRepGain:'Experience points you get', kvBonusNow:'Income bonus now', kvBonusAfter:'Income bonus after selling',
+    exitNote:'Reset: employees, cash and stage. Kept: experience points and active double income.',
+    exitCancel:'Not yet', exitConfirm:'Sell and start over',
+    stagesTitle:'Company stages', stagesIntro:'Your stage depends on company value (income per second × 10,000).', stageFrom:'from {v}',
+    helpTitle:'Terms and how to play', helpClose:'Got it',
+    infoNumbersTitle:'What the numbers mean', infoTeamTitle:'How hiring works', infoXpTitle:'Selling and experience',
+    introText:'You have a laptop, a garage and an idea. Hire a team, grow your income, become a billion-dollar company and sell it. Then start a new company, stronger.',
+    introLang:'Language', introStart:'Let’s start', introHelp:'Explain the game',
+    devTitle:'Dev panel', dvInc:'Income / sec', dvVal:'Company value', dvRun:'Earned this company', dvLife:'Earned lifetime',
+    dvRunTime:'Time in this company', dvPlay:'Play time (active)', dvExits:'Companies sold / XP', dvGain:'XP if sold now', dvTaps:'Taps / Ads watched',
+    dSkip10:'Time skip +10 min', dSkip60:'Time skip +1 hour', dSpeed:'Speed {n}', dOffline:'Simulate 1h away',
+    dReplay:'Replay intro', dReset:'Reset save', dResetConfirm:'Tap again to confirm', dClose:'Close',
+    dEvents:'Analytics events (last 40)', dNoEvents:'(no events yet)',
+    adTag:'AD PLACEHOLDER', adTitle:'Rewarded video',
+    adText:'In the Android build, an AdMob rewarded video plays here. The reward is granted only after it finishes.',
+    tH:'{h}h {m}m', tM:'{m}m {s}s', tS:'{s}s',
+  },
+  he: {
+    docTitle:'מהמוסך לאקזיט — אב-טיפוס משחק Idle',
+    gameName:'מהמוסך לאקזיט',
+    ship:'כתוב קוד', shipAria:'כתוב קוד', perTap:'{v} לכל לחיצה',
+    boostTitle:'📺 הכנסה כפולה',
+    boostIdle:'צפה בפרסומת קצרה: הכנסה כפולה ל-30 דקות',
+    boostActive:'פעילה · נשארו {t} · צפה שוב כדי להוסיף 30 דקות',
+    boostMax:'פעילה · נשארו {t} (מקסימום 4 שעות)',
+    cashLbl:'כסף בקופה', incomeLine:'הכנסה: {v} לשנייה', doubleBadge:'כפולה',
+    valueLbl:'שווי החברה:', nextStage:'השלב הבא: {name}, בשווי {v}', topStage:'הגעת לשלב הגבוה ביותר',
+    teamTitle:'הצוות שלך', modesLbl:'כמה לגייס בכל לחיצה:', modeMax:'הכי הרבה',
+    owned:'יש לך {n}', cardRate:'מכניסים {v} לשנייה', cardRateEach:'כל אחד מכניס {v} לשנייה',
+    cardBonus:'עוד {n} עד הכפלת ההכנסה מהם', cardAll:'כל בונוסי הכמות הושגו',
+    hireN:'גייס {n}', hireAria:'גייס {name}', lockedName:'בקרוב', lockedDesc:'ייפתח כשהחברה הנוכחית תרוויח {v}',
+    exitLocked:'מכור חברה 🔒', exitGain:'מכור חברה {n}', exitAria:'מכירת החברה',
+    helpAria:'מונחים והסבר', infoAria:'הסבר', stagesAria:'כל שלבי החברה',
+    hintTap:'לחץ על "כתוב קוד" כדי להרוויח כסף.', hintHire:'יש לך מספיק כסף: גייס את המתמחה הראשון שלך למטה!',
+    xpLbl:'נקודות ניסיון:', xpBonus:'(בונוס הכנסה {p})', version:'גרסה 0.4', langBtn:'🌐 English',
+    installBtn:'📲 התקנה', shareBtn:'📤 שיתוף', installTitle:'התקנה בטלפון',
+    shareText:'בוא תנסה את המשחק שלי: מהמוסך לחברת מיליארד', toastInstalled:'📲 המשחק הותקן במסך הבית!',
+    toastMilestone:'{icon} {name}: הגעת ל-{m}! ההכנסה מהם גדלה פי {k}',
+    toastStage:'{icon} שלב חדש: {name}!',
+    toastBoost:'📺 הכנסה כפולה הופעלה ל-30 דקות!', toastCollected:'אספת {v}',
+    toastExit:'🎉 מכרת את החברה! קיבלת {r} נקודות ניסיון',
+    toastNeed:'חסרים לך {v}. לחץ על "כתוב קוד" או חכה שהצוות ירוויח.',
+    tipFirstHire:'💡 המתמחה מכניס לך כסף בכל שנייה, גם כשאתה לא במשחק. תמשיך לגייס!',
+    tipPreSeed:'💡 טיפ: הכפתור "הכנסה כפולה" מכפיל את ההכנסה ל-30 דקות תמורת צפייה בפרסומת קצרה.',
+    tipExit:'💡 עכשיו אפשר למכור את החברה ולקבל נקודות ניסיון שמגדילות את ההכנסה לתמיד. ככל שתחכה, תקבל יותר. הכפתור מהבהב כשזו עסקה טובה.',
+    offTitle:'טוב שחזרת!', offText:'לא היית כאן {t}{cap}. בזמן הזה הצוות הרוויח:',
+    offCap:' (סופרים עד שעתיים)', offCollect:'אסוף', offDouble:'📺 צפה בפרסומת ואסוף פי 2',
+    exitTitle:'למכור את החברה?',
+    exitLockedText:'אפשר למכור את החברה רק משלב "{stage}" (שווי חברה {v}). תמשיך לגדול!',
+    exitOffer:'קונה רוצה לרכוש את החברה שלך. אם תמכור, תתחיל חברה חדשה מאפס ותקבל נקודות ניסיון. כל נקודה מגדילה את ההכנסה ב-10%, לתמיד.',
+    kvValuation:'שווי החברה', kvRepGain:'נקודות ניסיון שתקבל', kvBonusNow:'בונוס הכנסה עכשיו', kvBonusAfter:'בונוס הכנסה אחרי המכירה',
+    exitNote:'מתאפס: העובדים, הכסף והשלב. נשמר: נקודות הניסיון והכנסה כפולה פעילה.',
+    exitCancel:'עוד לא', exitConfirm:'מכור והתחל מחדש',
+    stagesTitle:'שלבי החברה', stagesIntro:'השלב נקבע לפי שווי החברה (ההכנסה לשנייה כפול 10,000).', stageFrom:'מ-{v}',
+    helpTitle:'מונחים והסבר', helpClose:'הבנתי',
+    infoNumbersTitle:'מה המספרים אומרים', infoTeamTitle:'איך עובד הגיוס', infoXpTitle:'מכירה ונקודות ניסיון',
+    introText:'יש לך מחשב נייד, מוסך ורעיון. גייס צוות, הגדל את ההכנסה, הפוך לחברת מיליארד ומכור אותה. אחר כך תתחיל חברה חדשה, חזקה יותר.',
+    introLang:'שפה', introStart:'יאללה, מתחילים', introHelp:'הסבר על המשחק',
+    devTitle:'פאנל פיתוח', dvInc:'הכנסה לשנייה', dvVal:'שווי החברה', dvRun:'רווח בחברה הנוכחית', dvLife:'רווח מצטבר',
+    dvRunTime:'זמן בחברה הנוכחית', dvPlay:'זמן משחק פעיל', dvExits:'חברות שנמכרו / ניסיון', dvGain:'ניסיון אם תמכור עכשיו', dvTaps:'לחיצות / פרסומות',
+    dSkip10:'קפיצה של 10 דקות', dSkip60:'קפיצה של שעה', dSpeed:'מהירות {n}', dOffline:'הדמיית שעה בחוץ',
+    dReplay:'הצג שוב את הפתיחה', dReset:'איפוס שמירה', dResetConfirm:'לחץ שוב לאישור', dClose:'סגור',
+    dEvents:'אירועי אנליטיקה (40 אחרונים)', dNoEvents:'(אין אירועים עדיין)',
+    adTag:'מקום לפרסומת', adTitle:'סרטון מתגמל',
+    adText:'בגרסת ה-Android תוצג כאן פרסומת וידאו מתגמלת של AdMob. הפרס מתקבל רק אחרי שהיא מסתיימת.',
+    tH:'{h} ש׳ {m} ד׳', tM:'{m} ד׳ {s} שנ׳', tS:'{s} שנ׳',
+  },
+};
+const LANGS = Object.keys(STR);
+const detectLang = () => {
+  try { return /^(he|iw)\b/i.test(navigator.language || '') ? 'he' : 'en'; } catch (_) { return 'en'; }
+};
+
+/* ================= Analytics hook ================= */
+// Later: replace the body with Firebase Analytics logEvent(name, params).
+const EVENTS = [];
+function track(name, params = {}) {
+  const e = { t: new Date().toTimeString().slice(0, 8), name, params };
+  EVENTS.push(e);
+  if (EVENTS.length > 200) EVENTS.shift();
+  try { console.debug('[analytics]', name, params); } catch (_) {}
+}
+
+/* ================= State & save ================= */
+function fresh() {
+  const now = Date.now();
+  return { v:1, cash:START_CASH, runEarned:0, totalEarned:0, owned:GENS.map(() => 0), rep:0, exits:0,
+    boostUntil:0, lastSeen:now, taps:0, createdAt:now, runStartedAt:now, buyMode:1,
+    adsWatched:0, stageIdx:0, playSec:0, lang:detectLang(), seenIntro:false, tips:{} };
+}
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw);
+    const merged = Object.assign(fresh(), s);
+    merged.owned = GENS.map((_, i) => (Array.isArray(s.owned) && Number(s.owned[i])) || 0);
+    ['cash','runEarned','totalEarned','rep'].forEach(k => { if (!isFinite(merged[k])) merged[k] = 0; });
+    if (!LANGS.includes(merged.lang)) merged.lang = detectLang();
+    if (!merged.tips || typeof merged.tips !== 'object') merged.tips = {};
+    if (![1, 10, 100, 'max'].includes(merged.buyMode)) merged.buyMode = 1;
+    return merged;
+  } catch (_) { return null; }
+}
+function save() {
+  S.lastSeen = Date.now();
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (_) {}
+}
+
+const saved = load();
+let S = saved || fresh();
+
+/* ================= i18n helpers ================= */
+function t(key, p) {
+  const table = STR[S.lang] || STR.en;
+  const s = table[key] != null ? table[key] : (STR.en[key] != null ? STR.en[key] : key);
+  return p ? s.replace(/\{(\w+)\}/g, (m, k) => (p[k] != null ? p[k] : m)) : s;
+}
+const pick = obj => obj[S.lang] || obj.en;
+const genName = i => pick(GEN_TXT)[GENS[i].id][0];
+const genDesc = i => pick(GEN_TXT)[GENS[i].id][1];
+const stageName = k => pick(STAGE_TXT)[STAGES[k].id];
+const stageDesc = k => pick(STAGE_DESC)[STAGES[k].id];
+
+/* ================= Ads hook ================= */
+// Later: replace with @capacitor-community/admob rewarded video.
+const Ads = {
+  busy: false,
+  showRewarded(placement) {
+    if (this.busy) return Promise.resolve(false);
+    this.busy = true;
+    track('ad_started', { placement });
+    return new Promise(resolve => {
+      const el = document.getElementById('ad');
+      const cnt = document.getElementById('adCount');
+      let n = 3; cnt.textContent = n; el.classList.add('show');
+      const iv = setInterval(() => {
+        n--; cnt.textContent = Math.max(n, 0);
+        if (n <= 0) {
+          clearInterval(iv); el.classList.remove('show'); this.busy = false;
+          S.adsWatched++; track('ad_completed', { placement });
+          resolve(true);
+        }
+      }, 1000);
+    });
+  }
+};
+
+/* ================= Economy ================= */
+const milestoneCount = n => MILESTONES.reduce((c, m) => c + (n >= m ? 1 : 0), 0);
+const nextMilestone = n => MILESTONES.find(m => m > n);
+const prevMilestone = n => { let p = 0; for (const m of MILESTONES) if (m <= n) p = m; return p; };
+const repMult = () => 1 + REP_BONUS * S.rep;
+const boostActive = () => Date.now() < S.boostUntil;
+const genIncome = i => GENS[i].inc * S.owned[i] * Math.pow(2, milestoneCount(S.owned[i])) * repMult();
+const baseIncome = () => GENS.reduce((sum, _, i) => sum + genIncome(i), 0);
+const income = () => baseIncome() * (boostActive() ? 2 : 1);
+const valuation = () => baseIncome() * VAL_MULT;
+const exitGain = () => Math.floor(Math.sqrt(valuation() / 1e6));
+const tapValue = () => 1 + 0.05 * income();
+const stageIndex = v => { let k = 0; STAGES.forEach((s, i) => { if (v >= s.v) k = i; }); return k; };
+
+function unitCost(i) { return GENS[i].cost * Math.pow(R, S.owned[i]); }
+function costN(i, n) { return unitCost(i) * (Math.pow(R, n) - 1) / (R - 1); }
+function maxAffordable(i) {
+  let n = Math.floor(Math.log(S.cash * (R - 1) / unitCost(i) + 1) / Math.log(R));
+  if (!isFinite(n) || n < 0) n = 0;
+  while (n > 0 && costN(i, n) > S.cash) n--;
+  return n;
+}
+// 10 / 100 mean "up to N": buy as many as you can afford, never fewer than 1 shown.
+function buyCount(i) {
+  const aff = maxAffordable(i);
+  return S.buyMode === 'max' ? Math.max(1, aff) : Math.min(S.buyMode, Math.max(1, aff));
+}
+
+function earn(x) { S.cash += x; S.runEarned += x; S.totalEarned += x; }
+
+/* ================= Formatting ================= */
+const UNITS = ['K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];
+function fmt(n, dec = false) {
+  if (!isFinite(n)) return '∞';
+  if (n < 0) return '-' + fmt(-n, dec);
+  if (n < 1000) return (dec && n < 100 && n % 1 !== 0) ? n.toFixed(1).replace(/\.0$/, '') : Math.floor(n).toString();
+  let e = Math.floor(Math.log10(n) / 3);
+  let v = n / Math.pow(10, 3 * e);
+  if (v >= 999.995) { e++; v = n / Math.pow(10, 3 * e); }
+  if (e > UNITS.length) return n.toExponential(2).replace('+', '');
+  return v.toFixed(v < 100 ? 2 : 1).replace(/\.?0+$/, '') + UNITS[e - 1];
+}
+const money = (n, dec) => iso('$' + fmt(n, dec));
+const pct = x => iso('+' + fmt(x) + '%');
+const pad = x => String(x).padStart(2, '0');
+function hms(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return h ? t('tH', { h, m: pad(m) }) : m ? t('tM', { m, s: pad(s) }) : t('tS', { s });
+}
+function clock(ms) {
+  const sec = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+  return iso(`${h}:${pad(m)}:${pad(s)}`);
+}
+
+/* ================= Tips (one-time contextual help) ================= */
+function tip(id, key) {
+  if (S.tips[id]) return;
+  S.tips[id] = 1;
+  toast(t(key), 'tip', 7000);
+  track('tip_shown', { id });
+}
+
+/* ================= Actions on the economy ================= */
+let lastNeedToast = 0;
+function buy(i, btn) {
+  const n = buyCount(i), c = costN(i, n);
+  if (c > S.cash) {
+    // Never a dead button: explain what is missing.
+    if (btn) { btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake'); }
+    if (Date.now() - lastNeedToast > 1500) {
+      lastNeedToast = Date.now();
+      toast(t('toastNeed', { v: money(c - S.cash, true) }));
+      track('buy_blocked', { gen: GENS[i].id, missing: Math.round(c - S.cash) });
+    }
+    return;
+  }
+  const before = S.owned[i];
+  S.cash -= c; S.owned[i] += n;
+  if (before === 0) track('first_purchase', { gen: GENS[i].id, run_sec: Math.round((Date.now() - S.runStartedAt) / 1000) });
+  track('buy', { gen: GENS[i].id, n, owned: S.owned[i] });
+  const gained = milestoneCount(S.owned[i]) - milestoneCount(before);
+  if (gained > 0) {
+    toast(t('toastMilestone', { icon: GENS[i].icon, name: genName(i), m: prevMilestone(S.owned[i]), k: Math.pow(2, gained) }));
+    track('milestone', { gen: GENS[i].id, owned: S.owned[i] });
+  }
+  if (S.exits === 0) tip('firstHire', 'tipFirstHire');
+  render(true);
+}
+
+function checkStage() {
+  const k = stageIndex(valuation());
+  if (k > S.stageIdx) {
+    for (let j = S.stageIdx + 1; j <= k; j++) {
+      track('stage_reached', { stage: STAGES[j].id, run_sec: Math.round((Date.now() - S.runStartedAt) / 1000), exits: S.exits });
+    }
+    toast(t('toastStage', { icon: STAGES[k].icon, name: stageName(k) }));
+    S.stageIdx = k;
+    if (k >= 1) tip('preSeed', 'tipPreSeed');
+  }
+  if (exitGain() >= 1) tip('exit', 'tipExit');
+}
+
+/* ================= UI ================= */
+const $ = id => document.getElementById(id);
+let cardEls = [];
+let shownCount = -1;
+
+function visibleGens() {
+  let shown = 0;
+  GENS.forEach((g, i) => { if (i === 0 || S.owned[i] > 0 || S.runEarned >= g.cost * 0.25) shown = i + 1; });
+  return shown;
+}
+
+function buildCards() {
+  const wrap = $('gens');
+  wrap.innerHTML = '';
+  cardEls = [];
+  const shown = visibleGens();
+  for (let i = 0; i < shown; i++) {
+    const el = document.createElement('div');
+    el.className = 'gen';
+    el.innerHTML = `<div class="ico"></div>
+      <div><div class="name"><span class="nm"></span> <span class="own"></span></div>
+      <div class="desc"></div><div class="stat"></div><div class="mbar"><div></div></div><div class="bl"></div></div>
+      <button class="buy"><span class="bn"></span><span class="bc"></span></button>`;
+    el.querySelector('.ico').textContent = GENS[i].icon;
+    el.querySelector('.nm').textContent = genName(i);
+    el.querySelector('.desc').textContent = genDesc(i);
+    const btn = el.querySelector('.buy');
+    btn.setAttribute('aria-label', t('hireAria', { name: genName(i) }));
+    btn.addEventListener('click', () => buy(i, btn));
+    wrap.appendChild(el);
+    cardEls.push({ own: el.querySelector('.own'), stat: el.querySelector('.stat'), mbar: el.querySelector('.mbar>div'),
+      bl: el.querySelector('.bl'), btn, bn: el.querySelector('.bn'), bc: el.querySelector('.bc') });
+  }
+  if (shown < GENS.length) {
+    const el = document.createElement('div');
+    el.className = 'gen locked';
+    el.innerHTML = '<div class="ico"></div><div><div class="name"></div><div class="desc"></div></div>';
+    el.querySelector('.ico').textContent = GENS[shown].icon;
+    el.querySelector('.name').textContent = t('lockedName');
+    el.querySelector('.desc').textContent = t('lockedDesc', { v: money(GENS[shown].cost * 0.25) });
+    wrap.appendChild(el);
+  }
+  shownCount = shown;
+}
+
+function render(force) {
+  if (force || visibleGens() !== shownCount) buildCards();
+  const inc = income(), val = valuation(), b2 = boostActive() ? 2 : 1;
+  $('cash').textContent = money(S.cash);
+  $('income').textContent = t('incomeLine', { v: money(inc, true) });
+  if (b2 === 2) { const x = document.createElement('span'); x.className = 'x2'; x.textContent = t('doubleBadge'); $('income').appendChild(x); }
+  $('valuation').textContent = money(val);
+  const k = stageIndex(val), nx = STAGES[k + 1];
+  $('stageIcon').textContent = STAGES[k].icon; $('stageName').textContent = stageName(k);
+  if (nx) {
+    const a = Math.log10(STAGES[k].v + 1), b = Math.log10(nx.v), c = Math.log10(val + 1);
+    $('stageBar').style.width = Math.min(100, Math.max(0, (c - a) / (b - a) * 100)) + '%';
+    $('nextStage').textContent = t('nextStage', { name: stageName(k + 1), v: money(nx.v) });
+  } else { $('stageBar').style.width = '100%'; $('nextStage').textContent = t('topStage'); }
+  $('tapValue').textContent = t('perTap', { v: iso('+$' + fmt(tapValue(), true)) });
+
+  // Sell-company button
+  const g = exitGain(), eb = $('exitBtn');
+  eb.textContent = g >= 1 ? t('exitGain', { n: iso('+' + fmt(g)) }) : t('exitLocked');
+  eb.classList.toggle('ready', g >= 1);
+  // Pulse when selling now would at least double the player's experience (min 10 for the first sale).
+  eb.classList.toggle('hot', g >= Math.max(10, S.rep));
+
+  // Double income
+  const left = S.boostUntil - Date.now(), bb = $('boostBtn');
+  bb.classList.toggle('active', left > 0);
+  if (left > 0) {
+    const atMax = left > BOOST_MAX_MS - BOOST_STEP_MS;
+    $('boostText').textContent = t(atMax ? 'boostMax' : 'boostActive', { t: clock(left) });
+    bb.disabled = atMax;
+  } else { $('boostText').textContent = t('boostIdle'); bb.disabled = false; }
+
+  // Hint for brand-new players
+  const anyOwned = S.owned.some(n => n > 0);
+  $('hint').textContent = !anyOwned && S.exits === 0 ? t(S.cash >= GENS[0].cost ? 'hintHire' : 'hintTap') : '';
+
+  // Modes
+  document.querySelectorAll('#modes button').forEach(b => b.classList.toggle('on', String(S.buyMode) === b.dataset.m));
+
+  // Cards
+  cardEls.forEach((c, i) => {
+    const n = buyCount(i), cost = costN(i, n), nm = nextMilestone(S.owned[i]), pm = prevMilestone(S.owned[i]);
+    c.own.textContent = S.owned[i] ? '· ' + t('owned', { n: S.owned[i] }) : '';
+    c.stat.textContent = S.owned[i]
+      ? t('cardRate', { v: money(genIncome(i) * b2, true) })
+      : t('cardRateEach', { v: money(GENS[i].inc * repMult() * b2, true) });
+    c.mbar.style.width = nm ? ((S.owned[i] - pm) / (nm - pm) * 100) + '%' : '100%';
+    c.bl.textContent = nm ? t('cardBonus', { n: nm - S.owned[i] }) : t('cardAll');
+    c.bn.textContent = t('hireN', { n });
+    c.bc.textContent = money(cost);
+    const cant = cost > S.cash;
+    c.btn.classList.toggle('cant', cant);   // still an active button: tapping it explains what is missing
+    c.btn.style.setProperty('--p', cant ? Math.max(0, Math.min(100, S.cash / cost * 100)).toFixed(1) + '%' : '0%');
+  });
+
+  $('rep').textContent = fmt(S.rep);
+  $('repBonus').textContent = t('xpBonus', { p: pct(S.rep * REP_BONUS * 100) });
+}
+
+let helpGroup = null, helpTitleKey = 'helpTitle';
+function renderHelp() {
+  $('helpTitle').textContent = t(helpTitleKey);
+  const list = $('helpList');
+  list.innerHTML = '';
+  const terms = pick(TERMS);
+  (TERM_GROUPS[helpGroup] || TERM_GROUPS.all).forEach(key => {
+    const [icon, title, text] = terms[key];
+    const el = document.createElement('div');
+    el.className = 'hitem';
+    el.dataset.term = key;
+    el.innerHTML = '<div class="hi"></div><div><b class="ht"></b><div class="hd"></div></div>';
+    el.querySelector('.hi').textContent = icon;
+    el.querySelector('.ht').textContent = title;
+    el.querySelector('.hd').textContent = text;
+    list.appendChild(el);
+  });
+}
+function openHelp(group, titleKey, from) {
+  helpGroup = group; helpTitleKey = titleKey;
+  renderHelp();
+  $('helpModal').classList.add('show');
+  track('help_opened', { group, from });
+}
+
+function renderStages() {
+  const list = $('stagesList');
+  list.innerHTML = '';
+  const cur = stageIndex(valuation());
+  STAGES.forEach((s, k) => {
+    const el = document.createElement('div');
+    el.className = 'srow' + (k === cur ? ' cur' : k < cur ? ' done' : '');
+    el.innerHTML = '<div class="si"></div><div><b></b><div class="sd"></div></div><div class="sv"></div>';
+    el.querySelector('.si').textContent = s.icon;
+    el.querySelector('b').textContent = stageName(k);
+    el.querySelector('.sd').textContent = stageDesc(k);
+    el.querySelector('.sv').textContent = k === 0 ? '' : t('stageFrom', { v: money(s.v) });
+    list.appendChild(el);
+  });
+}
+
+function applyLang() {
+  const he = S.lang === 'he';
+  document.documentElement.lang = S.lang;
+  document.documentElement.dir = he ? 'rtl' : 'ltr';
+  document.title = t('docTitle');
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-aria]').forEach(el => { el.setAttribute('aria-label', t(el.dataset.i18nAria)); });
+  $('langBtn').textContent = t('langBtn');
+  $('dSpeed').textContent = t('dSpeed', { n: iso('×' + speed) });
+  $('dReset').textContent = t(resetArmed ? 'dResetConfirm' : 'dReset');
+  document.querySelectorAll('#langPick button').forEach(b => b.classList.toggle('on', b.dataset.lang === S.lang));
+  renderHelp();
+  renderStages();
+  if ($('devModal').classList.contains('show')) renderDev();
+  render(true);
+}
+function setLang(lang) {
+  if (!LANGS.includes(lang) || lang === S.lang) return;
+  S.lang = lang;
+  track('language_changed', { lang });
+  $('toasts').innerHTML = '';   // transient messages were written in the old language
+  applyLang(); save();
+}
+
+function toast(text, cls, ms = 2600) {
+  const el = document.createElement('div');
+  el.className = 'toast' + (cls ? ' ' + cls : '');
+  el.textContent = text;
+  const box = $('toasts');
+  box.appendChild(el);
+  while (box.children.length > 3) box.firstChild.remove();
+  setTimeout(() => el.remove(), ms);
+}
+function floatText(x, y, text) {
+  const el = document.createElement('div');
+  el.className = 'float'; el.textContent = text;
+  el.style.left = x + 'px'; el.style.top = (y - 20) + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 900);
+}
+
+/* ================= Event wiring ================= */
+$('tapBtn').addEventListener('click', e => {
+  const v = tapValue();
+  earn(v); S.taps++;
+  const r = $('tapBtn').getBoundingClientRect();
+  const x = e.clientX || (r.left + r.width / 2), y = e.clientY || (r.top + r.height / 2);
+  floatText(x, y, iso('+$' + fmt(v, true)));
+  if (S.taps === 1) track('first_tap');
+  render();
+});
+
+$('boostBtn').addEventListener('click', async () => {
+  track('ad_offer_clicked', { placement: 'boost_x2' });
+  const ok = await Ads.showRewarded('boost_x2');
+  if (!ok) return;
+  const now = Date.now();
+  S.boostUntil = Math.min(Math.max(S.boostUntil, now) + BOOST_STEP_MS, now + BOOST_MAX_MS);
+  toast(t('toastBoost'));
+  save(); render();
+});
+
+document.querySelectorAll('#modes button').forEach(b => b.addEventListener('click', () => {
+  S.buyMode = b.dataset.m === 'max' ? 'max' : Number(b.dataset.m);
+  render();
+}));
+
+// Language
+$('langBtn').addEventListener('click', () => setLang(S.lang === 'he' ? 'en' : 'he'));
+document.querySelectorAll('#langPick button').forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
+
+// Intro, terms, stages, info buttons
+function finishIntro() {
+  if (S.seenIntro) return;
+  S.seenIntro = true;
+  track('tutorial_completed', { lang: S.lang });
+  save();
+}
+$('introStart').addEventListener('click', () => { $('introModal').classList.remove('show'); finishIntro(); });
+$('introHelp').addEventListener('click', () => { $('introModal').classList.remove('show'); openHelp('all', 'helpTitle', 'intro'); });
+$('helpBtn').addEventListener('click', () => openHelp('all', 'helpTitle', 'header'));
+$('helpClose').addEventListener('click', () => { $('helpModal').classList.remove('show'); finishIntro(); });
+const INFO_TITLES = { numbers: 'infoNumbersTitle', team: 'infoTeamTitle', xp: 'infoXpTitle', install: 'installTitle' };
+document.querySelectorAll('[data-info]').forEach(b => b.addEventListener('click', () =>
+  openHelp(b.dataset.info, INFO_TITLES[b.dataset.info], 'info_' + b.dataset.info)));
+$('stageBtn').addEventListener('click', () => { renderStages(); $('stagesModal').classList.add('show'); track('stages_opened'); });
+$('stagesClose').addEventListener('click', () => $('stagesModal').classList.remove('show'));
+
+// Sell the company (prestige)
+$('exitBtn').addEventListener('click', () => {
+  const g = exitGain(), val = valuation();
+  track('exit_screen_opened', { gain: g });
+  $('exitText').textContent = g < 1
+    ? t('exitLockedText', { v: money(STAGES[SELL_STAGE].v), stage: stageName(SELL_STAGE) })
+    : t('exitOffer');
+  const kv = $('exitKv');
+  kv.innerHTML = '';
+  [[t('kvValuation'), money(val)], [t('kvRepGain'), iso('+' + fmt(g))],
+   [t('kvBonusNow'), pct(S.rep * REP_BONUS * 100)], [t('kvBonusAfter'), pct((S.rep + g) * REP_BONUS * 100)]]
+    .forEach(([a, b]) => { const d1 = document.createElement('div'), d2 = document.createElement('div');
+      d1.textContent = a; d2.textContent = b; kv.append(d1, d2); });
+  $('exitConfirm').disabled = g < 1;
+  $('exitModal').classList.add('show');
+});
+$('exitCancel').addEventListener('click', () => $('exitModal').classList.remove('show'));
+$('exitConfirm').addEventListener('click', () => {
+  const g = exitGain();
+  if (g < 1) return;
+  track('exit', { gain: g, valuation: Math.round(valuation()), run_sec: Math.round((Date.now() - S.runStartedAt) / 1000), exit_no: S.exits + 1 });
+  S.rep += g; S.exits++;
+  S.cash = START_CASH; S.runEarned = 0; S.owned = GENS.map(() => 0); S.stageIdx = 0; S.runStartedAt = Date.now();
+  $('exitModal').classList.remove('show');
+  toast(t('toastExit', { r: iso(fmt(g)) }));
+  save(); render(true);
+});
+
+// Offline earnings
+let pendingOffline = 0;
+function processOffline() {
+  const now = Date.now();
+  const elapsed = (now - S.lastSeen) / 1000;
+  S.lastSeen = now;
+  if (elapsed < 30) return;
+  const sec = Math.min(elapsed, OFFLINE_CAP_SEC);
+  const boostedSec = Math.max(0, Math.min(sec, (S.boostUntil - (now - elapsed * 1000)) / 1000));
+  const amount = baseIncome() * (sec + boostedSec);
+  if (amount <= 0) return;
+  pendingOffline = amount;
+  $('offlineText').textContent = t('offText', { t: hms(elapsed), cap: elapsed > OFFLINE_CAP_SEC ? t('offCap') : '' });
+  $('offlineAmount').textContent = money(amount);
+  $('offlineModal').classList.add('show');
+  track('offline_offer', { away_sec: Math.round(elapsed), amount: Math.round(amount) });
+}
+function collectOffline(mult) {
+  if (pendingOffline > 0) {
+    earn(pendingOffline * mult);
+    toast(t('toastCollected', { v: money(pendingOffline * mult) }));
+    track('offline_collected', { mult });
+  }
+  pendingOffline = 0;
+  $('offlineModal').classList.remove('show');
+  save(); render();
+}
+$('offlineCollect').addEventListener('click', () => collectOffline(1));
+$('offlineDouble').addEventListener('click', async () => {
+  track('ad_offer_clicked', { placement: 'offline_x2' });
+  const ok = await Ads.showRewarded('offline_x2');
+  collectOffline(ok ? 2 : 1);
+});
+
+/* ================= Dev panel ================= */
+let speed = 1, resetArmed = false;
+function renderDev() {
+  const rows = [
+    ['dvInc', money(income(), true)], ['dvVal', money(valuation())], ['dvRun', money(S.runEarned)],
+    ['dvLife', money(S.totalEarned)], ['dvRunTime', hms((Date.now() - S.runStartedAt) / 1000)],
+    ['dvPlay', hms(S.playSec)], ['dvExits', iso(`${S.exits} / ${fmt(S.rep)}`)], ['dvGain', iso('+' + fmt(exitGain()))],
+    ['dvTaps', iso(`${S.taps} / ${S.adsWatched}`)],
+  ];
+  const kv = $('devKv'); kv.innerHTML = '';
+  rows.forEach(([k, v]) => { const a = document.createElement('div'), b = document.createElement('div');
+    a.textContent = t(k); b.textContent = v; kv.append(a, b); });
+  $('devLog').textContent = EVENTS.slice(-40).reverse()
+    .map(e => `${e.t}  ${e.name}  ${JSON.stringify(e.params)}`).join('\n') || t('dNoEvents');
+}
+function closeDev() { $('devModal').classList.remove('show'); resetArmed = false; $('dReset').textContent = t('dReset'); }
+$('devBtn').addEventListener('click', () => { renderDev(); $('devModal').classList.add('show'); });
+$('dClose').addEventListener('click', closeDev);
+$('dSkip10').addEventListener('click', () => { earn(income() * 600); checkStage(); render(); renderDev(); });
+$('dSkip60').addEventListener('click', () => { earn(income() * 3600); checkStage(); render(); renderDev(); });
+$('dSpeed').addEventListener('click', () => { speed = speed === 1 ? 10 : 1; $('dSpeed').textContent = t('dSpeed', { n: iso('×' + speed) }); });
+$('dOffline').addEventListener('click', () => { closeDev(); S.lastSeen = Date.now() - 3600 * 1000; processOffline(); });
+$('dReplay').addEventListener('click', () => { closeDev(); $('introModal').classList.add('show'); });
+$('dReset').addEventListener('click', () => {
+  if (!resetArmed) { resetArmed = true; $('dReset').textContent = t('dResetConfirm'); return; }
+  const lang = S.lang;
+  S = fresh(); S.lang = lang;
+  try { localStorage.removeItem(KEY); } catch (_) {}
+  track('save_reset');
+  closeDev(); applyLang();
+  $('introModal').classList.add('show');
+});
+
+/* ================= Loop & lifecycle ================= */
+let last = performance.now();
+function tick() {
+  const now = performance.now();
+  const dt = Math.min((now - last) / 1000, 1);
+  last = now;
+  if (document.hidden) return;
+  S.playSec += dt;
+  earn(income() * dt * speed);
+  checkStage();
+  render();
+}
+
+/* ================= Install, share, offline (web app) ================= */
+// Developer panel is for testing only: open the game with #dev at the end of the address to see it.
+const syncDev = () => { $('devBtn').hidden = !/dev/.test(location.hash); };
+syncDev();
+window.addEventListener('hashchange', syncDev);
+const isStandalone = () => {
+  try { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (_) { return false; }
+};
+const isWeb = /^https?:$/.test(location.protocol);
+let installPrompt = null;
+$('installBtn').hidden = !isWeb || isStandalone();
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; $('installBtn').hidden = isStandalone(); });
+window.addEventListener('appinstalled', () => { installPrompt = null; $('installBtn').hidden = true; toast(t('toastInstalled')); track('app_installed'); });
+$('installBtn').addEventListener('click', async () => {
+  track('install_clicked', { native: !!installPrompt });
+  if (installPrompt) {
+    try { installPrompt.prompt(); const r = await installPrompt.userChoice; track('install_choice', { outcome: r && r.outcome }); } catch (_) {}
+    installPrompt = null;
+  } else {
+    openHelp('install', 'installTitle', 'install_button');   // iPhone and other browsers: show the steps
+  }
+});
+$('shareBtn').hidden = !(isWeb && navigator.share);
+$('shareBtn').addEventListener('click', async () => {
+  track('share_clicked');
+  try { await navigator.share({ title: t('gameName'), text: t('shareText'), url: location.href.split('#')[0] }); track('share_done'); } catch (_) {}
+});
+if (isWeb && 'serviceWorker' in navigator) {
+  try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (_) {}
+}
+
+track('session_start', { returning: !!saved, exits: S.exits, lang: S.lang, standalone: isStandalone() });
+applyLang();
+if (!S.seenIntro) { $('introModal').classList.add('show'); track('tutorial_shown', { lang: S.lang }); }
+if (saved) processOffline();
+setInterval(tick, 100);
+setInterval(() => { if (!document.hidden) save(); }, 5000);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { save(); track('session_pause'); }
+  else { processOffline(); last = performance.now(); render(); }
+});
+window.addEventListener('pagehide', () => { if (!document.hidden) save(); });
+
+// Tiny debug handle for automated tests.
+window.__g2e = { get S() { return S; }, income, valuation, exitGain, costN, maxAffordable, buy, earn, EVENTS,
+  processOffline, setLang, STR, GEN_TXT, STAGE_TXT, STAGE_DESC, TERMS, TERM_GROUPS, openHelp };
+})();
+</script>
+</body>
+</html>
