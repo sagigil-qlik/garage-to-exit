@@ -96,6 +96,11 @@
   footer .tools{display:flex;gap:6px;align-items:center}
   .small{background:transparent;border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-size:11px;color:var(--muted)}
   .small[hidden]{display:none}
+  a.small{text-decoration:none}
+  footer .tools{flex-wrap:wrap;justify-content:flex-end}
+  #adLoading{z-index:65}
+  .spin{width:34px;height:34px;margin:4px auto 0;border:4px solid var(--line);border-top-color:var(--accent2);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
   #installBtn{border-color:var(--accent2);color:var(--accent2)}
 
   /* Floating text & toasts */
@@ -193,8 +198,10 @@
     <div class="tools">
       <button class="small" id="installBtn" data-i18n="installBtn" hidden></button>
       <button class="small" id="shareBtn" data-i18n="shareBtn" hidden></button>
+      <button class="small" id="privacyBtn" data-i18n="privacyBtn" hidden></button>
       <button class="small" id="langBtn"></button>
-      <span data-i18n="version"></span>
+      <a class="small" id="policyLink" target="_blank" rel="noopener" data-i18n="policyLink"></a>
+      <span id="verLbl" data-i18n="version"></span>
       <button class="small" id="devBtn" hidden>DEV</button>
     </div>
   </footer>
@@ -270,6 +277,12 @@
     <button class="b-sec" id="introHelp" data-i18n="introHelp"></button>
     <button class="b-pri" id="introStart" data-i18n="introStart"></button>
   </div>
+</div></div>
+
+<!-- Real ad is loading (Android app) -->
+<div class="modal" id="adLoading"><div class="sheet" style="text-align:center;max-width:260px">
+  <div class="spin"></div>
+  <p data-i18n="adLoading" style="margin:10px 0 0"></p>
 </div></div>
 
 <!-- Fake rewarded ad -->
@@ -439,7 +452,11 @@ const STR = {
     exitLocked:'Sell company 🔒', exitGain:'Sell company {n}', exitAria:'Sell the company',
     helpAria:'Terms and how to play', infoAria:'Explanation', stagesAria:'All company stages',
     hintTap:'Tap "Write code" to earn money.', hintHire:'You have enough money: hire your first Intern below!',
-    xpLbl:'Experience points:', xpBonus:'(income bonus {p})', version:'v0.4', langBtn:'🌐 עברית',
+    xpLbl:'Experience points:', xpBonus:'(income bonus {p})', version:'v0.5', langBtn:'🌐 עברית',
+    adLoading:'Loading the ad…', adCancelled:'The ad was closed before the end, so there is no reward this time.',
+    adFailed:'No ad is available right now. Try again in a minute.', adNotReady:'Ads are still loading. Try again in a few seconds.',
+    adNoConsent:'Ads are off because of your privacy choices. You can change them under "Privacy".',
+    privacyBtn:'🔒 Privacy', policyLink:'Privacy policy',
     installBtn:'📲 Install', shareBtn:'📤 Share', installTitle:'Install on your phone',
     shareText:'Try my game: from a garage to a billion-dollar company', toastInstalled:'📲 The game is installed on your home screen!',
     toastMilestone:'{icon} {name}: {m} reached! Their income is {k} times higher',
@@ -489,7 +506,11 @@ const STR = {
     exitLocked:'מכור חברה 🔒', exitGain:'מכור חברה {n}', exitAria:'מכירת החברה',
     helpAria:'מונחים והסבר', infoAria:'הסבר', stagesAria:'כל שלבי החברה',
     hintTap:'לחץ על "כתוב קוד" כדי להרוויח כסף.', hintHire:'יש לך מספיק כסף: גייס את המתמחה הראשון שלך למטה!',
-    xpLbl:'נקודות ניסיון:', xpBonus:'(בונוס הכנסה {p})', version:'גרסה 0.4', langBtn:'🌐 English',
+    xpLbl:'נקודות ניסיון:', xpBonus:'(בונוס הכנסה {p})', version:'גרסה 0.5', langBtn:'🌐 English',
+    adLoading:'טוען פרסומת…', adCancelled:'הפרסומת נסגרה לפני הסוף, ולכן הפעם אין פרס.',
+    adFailed:'אין כרגע פרסומת זמינה. נסה שוב בעוד דקה.', adNotReady:'הפרסומות עוד נטענות. נסה שוב בעוד כמה שניות.',
+    adNoConsent:'הפרסומות כבויות לפי בחירות הפרטיות שלך. אפשר לשנות אותן ב"פרטיות".',
+    privacyBtn:'🔒 פרטיות', policyLink:'מדיניות פרטיות',
     installBtn:'📲 התקנה', shareBtn:'📤 שיתוף', installTitle:'התקנה בטלפון',
     shareText:'בוא תנסה את המשחק שלי: מהמוסך לחברת מיליארד', toastInstalled:'📲 המשחק הותקן במסך הבית!',
     toastMilestone:'{icon} {name}: הגעת ל-{m}! ההכנסה מהם גדלה פי {k}',
@@ -579,11 +600,34 @@ const genDesc = i => pick(GEN_TXT)[GENS[i].id][1];
 const stageName = k => pick(STAGE_TXT)[STAGES[k].id];
 const stageDesc = k => pick(STAGE_DESC)[STAGES[k].id];
 
-/* ================= Ads hook ================= */
-// Later: replace with @capacitor-community/admob rewarded video.
+/* ================= Ads ================= */
+// Inside the Android app (Capacitor) ads come from AdMob through native.js (window.G2ENative).
+// On the website there is no ad network, so a 3-second placeholder stands in for the ad.
+const NATIVE = (() => {
+  try { return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()); } catch (_) { return false; }
+})();
+const PRIVACY_URL = 'https://sagigil-qlik.github.io/garage-to-exit/privacy.html';
+const AD_MSG = { cancelled: 'adCancelled', no_consent: 'adNoConsent', not_configured: 'adNotReady', not_ready: 'adNotReady', busy: 'adNotReady' };
 const Ads = {
   busy: false,
+  async showNative(placement) {
+    if (this.busy) return false;
+    const N = window.G2ENative;
+    if (!N) { toast(t('adNotReady')); return false; }
+    this.busy = true;
+    track('ad_started', { placement, native: true });
+    $('adLoading').classList.add('show');
+    let r;
+    try { r = await N.showRewarded(placement); } catch (_) { r = { rewarded: false, reason: 'failed' }; }
+    $('adLoading').classList.remove('show');
+    this.busy = false;
+    if (r && r.rewarded) { S.adsWatched++; track('ad_completed', { placement }); return true; }
+    track('ad_not_rewarded', { placement, reason: r && r.reason, code: r && r.code });
+    toast(t(AD_MSG[r && r.reason] || 'adFailed'), null, 4000);
+    return false;
+  },
   showRewarded(placement) {
+    if (NATIVE) return this.showNative(placement);
     if (this.busy) return Promise.resolve(false);
     this.busy = true;
     track('ad_started', { placement });
@@ -999,7 +1043,7 @@ $('offlineCollect').addEventListener('click', () => collectOffline(1));
 $('offlineDouble').addEventListener('click', async () => {
   track('ad_offer_clicked', { placement: 'offline_x2' });
   const ok = await Ads.showRewarded('offline_x2');
-  collectOffline(ok ? 2 : 1);
+  if (ok) collectOffline(2);   // no reward: the window stays open, so the player can still collect or retry
 });
 
 /* ================= Dev panel ================= */
@@ -1037,11 +1081,14 @@ $('dReset').addEventListener('click', () => {
 
 /* ================= Loop & lifecycle ================= */
 let last = performance.now();
+let paused = false, loopId = null;
+function startLoop() { if (!loopId) loopId = setInterval(tick, 100); }
+function stopLoop() { clearInterval(loopId); loopId = null; }
 function tick() {
   const now = performance.now();
   const dt = Math.min((now - last) / 1000, 1);
   last = now;
-  if (document.hidden) return;
+  if (document.hidden || paused) return;
   S.playSec += dt;
   earn(income() * dt * speed);
   checkStage();
@@ -1056,7 +1103,7 @@ window.addEventListener('hashchange', syncDev);
 const isStandalone = () => {
   try { return matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (_) { return false; }
 };
-const isWeb = /^https?:$/.test(location.protocol);
+const isWeb = /^https?:$/.test(location.protocol) && !NATIVE;   // the app is served from https://localhost too
 let installPrompt = null;
 $('installBtn').hidden = !isWeb || isStandalone();
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; $('installBtn').hidden = isStandalone(); });
@@ -1070,11 +1117,50 @@ $('installBtn').addEventListener('click', async () => {
     openHelp('install', 'installTitle', 'install_button');   // iPhone and other browsers: show the steps
   }
 });
-$('shareBtn').hidden = !(isWeb && navigator.share);
+$('shareBtn').hidden = !(NATIVE || (isWeb && navigator.share));
 $('shareBtn').addEventListener('click', async () => {
-  track('share_clicked');
+  track('share_clicked', { native: NATIVE });
+  if (NATIVE) { if (window.G2ENative && await window.G2ENative.share(t('gameName'), t('shareText'))) track('share_done'); return; }
   try { await navigator.share({ title: t('gameName'), text: t('shareText'), url: location.href.split('#')[0] }); track('share_done'); } catch (_) {}
 });
+$('policyLink').href = PRIVACY_URL;
+$('privacyBtn').addEventListener('click', async () => {
+  track('privacy_options_opened');
+  if (window.G2ENative) await window.G2ENative.showPrivacyOptions();
+});
+// Hidden way to reach the developer panel on a phone: tap the version label 7 times.
+let verTaps = 0, verTimer = null;
+$('verLbl').addEventListener('click', () => {
+  verTaps++; clearTimeout(verTimer); verTimer = setTimeout(() => { verTaps = 0; }, 2000);
+  if (verTaps >= 7) { verTaps = 0; $('devBtn').hidden = !$('devBtn').hidden; }
+});
+
+/* ================= Android app hooks (called from native.js) ================= */
+const MODAL_ORDER = ['offlineModal', 'exitModal', 'devModal', 'stagesModal', 'helpModal', 'introModal'];
+window.__g2eHooks = {
+  // Android back button: close the top window. Returns true when something was closed.
+  onBack() {
+    if ($('adLoading').classList.contains('show') || $('ad').classList.contains('show')) return true;
+    for (const id of MODAL_ORDER) {
+      if (!$(id).classList.contains('show')) continue;
+      if (id === 'offlineModal') collectOffline(1);
+      else if (id === 'devModal') closeDev();
+      else if (id === 'introModal') { $(id).classList.remove('show'); finishIntro(); }
+      else if (id === 'helpModal') { $(id).classList.remove('show'); finishIntro(); }
+      else $(id).classList.remove('show');
+      return true;
+    }
+    return false;
+  },
+  pause() { if (paused) return; paused = true; stopLoop(); save(); track('session_pause', { native: true }); },
+  resume() { if (!paused) return; paused = false; processOffline(); last = performance.now(); startLoop(); render(); },
+};
+if (NATIVE) {
+  const s = document.createElement('script');
+  s.src = 'native.js';
+  s.onload = () => { if (window.G2ENative) window.G2ENative.onChange(st => { $('privacyBtn').hidden = !st.privacyOptionsRequired; }); };
+  document.head.appendChild(s);
+}
 if (isWeb && 'serviceWorker' in navigator) {
   try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (_) {}
 }
@@ -1083,8 +1169,8 @@ track('session_start', { returning: !!saved, exits: S.exits, lang: S.lang, stand
 applyLang();
 if (!S.seenIntro) { $('introModal').classList.add('show'); track('tutorial_shown', { lang: S.lang }); }
 if (saved) processOffline();
-setInterval(tick, 100);
-setInterval(() => { if (!document.hidden) save(); }, 5000);
+startLoop();
+setInterval(() => { if (!document.hidden && !paused) save(); }, 5000);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { save(); track('session_pause'); }
   else { processOffline(); last = performance.now(); render(); }
