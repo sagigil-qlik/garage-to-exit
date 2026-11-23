@@ -152,6 +152,29 @@
   .srow.cur{border-color:var(--gold);background:#2a2614}
   .srow.done{opacity:.6}
 
+  /* Leaderboard */
+  .lbsub{color:var(--muted);font-size:12px;margin:2px 0 8px}
+  .linkbtn{background:none;color:var(--accent2);font-size:12px;font-weight:700;padding:0;text-decoration:underline}
+  .lbwin:empty{display:none}
+  .lbwin{background:#2a2614;border:1px solid var(--gold);border-radius:12px;padding:8px 10px;font-weight:700;font-size:13px;margin-bottom:8px;color:#fff3cf}
+  .lbme{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+  .lbme div{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:6px 8px;display:flex;flex-direction:column}
+  .lbme span{color:var(--muted);font-size:11px}
+  .lbme b{font-size:15px;font-variant-numeric:tabular-nums}
+  .lblist{display:flex;flex-direction:column;gap:6px}
+  .lbrow{display:grid;grid-template-columns:30px 1fr auto;gap:8px;align-items:center;background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:7px 10px}
+  .lbrow.me{border-color:var(--accent2);background:rgba(32,211,176,.08)}
+  .lbr{font-weight:800;text-align:center;font-size:15px}
+  .lbn b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lbn small{color:var(--muted);font-size:11px}
+  .lbp{font-weight:800;color:var(--gold);font-variant-numeric:tabular-nums}
+  .lbsep{text-align:center;color:var(--muted)}
+  .lbstatus{color:var(--muted);font-size:13px;margin:4px 0}
+  .lbstatus:empty{display:none}
+  .nick{user-select:text;-webkit-user-select:text;width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:#0b0e1c;color:var(--text);font:inherit;font-size:16px}
+  .err{color:var(--danger);font-size:12px;min-height:16px;margin-top:4px}
+  #nickModal{z-index:46}   /* opens on top of the leaderboard window */
+
   /* Fake ad */
   #ad{position:fixed;inset:0;background:#000;z-index:70;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:24px}
   #ad.show{display:flex}
@@ -167,6 +190,7 @@
     <div class="row">
       <button class="stage" id="stageBtn" data-i18n-aria="stagesAria"><span id="stageIcon"></span><span id="stageName"></span><span class="info">ⓘ</span></button>
       <div class="right">
+        <button id="lbBtn" class="help" data-i18n-aria="lbAria">🏆</button>
         <button id="helpBtn" class="help" data-i18n-aria="helpAria">?</button>
         <button id="exitBtn" class="exit" data-i18n-aria="exitAria"></button>
       </div>
@@ -257,6 +281,30 @@
   <div class="btns"><button class="b-pri" id="stagesClose" data-i18n="helpClose"></button></div>
 </div></div>
 
+<!-- Nickname for the leaderboard -->
+<div class="modal" id="nickModal"><div class="sheet">
+  <h2 data-i18n="nickTitle"></h2>
+  <p data-i18n="nickText"></p>
+  <input id="nickInput" class="nick" maxlength="16" autocomplete="off" spellcheck="false">
+  <div id="nickErr" class="err"></div>
+  <div class="btns">
+    <button class="b-sec" id="nickCancel" data-i18n="nickLater"></button>
+    <button class="b-pri" id="nickSave" data-i18n="nickSave"></button>
+  </div>
+</div></div>
+
+<!-- Weekly leaderboard -->
+<div class="modal" id="lbModal"><div class="sheet">
+  <h2 data-i18n="lbTitle"></h2>
+  <div class="lbsub"><span id="lbEnds"></span> · <button class="linkbtn" id="lbHow" data-i18n="lbHow"></button></div>
+  <div id="lbWinner" class="lbwin"></div>
+  <div id="lbMine"></div>
+  <div class="lbsub"><span id="lbNick"></span> · <button class="linkbtn" id="lbNickBtn" data-i18n="lbNickChange"></button></div>
+  <div id="lbStatus" class="lbstatus"></div>
+  <div id="lbList" class="lblist"></div>
+  <div class="btns"><button class="b-pri" id="lbClose" data-i18n="helpClose"></button></div>
+</div></div>
+
 <!-- Terms & explanations (full list or a section) -->
 <div class="modal" id="helpModal"><div class="sheet">
   <h2 id="helpTitle"></h2>
@@ -307,7 +355,13 @@ const BOOST_STEP_MS = 30 * 60 * 1000;   // each ad adds 30 min of double income
 const BOOST_MAX_MS = 4 * 3600 * 1000;   // stack up to 4 hours
 const MILESTONES = [10, 25, 50, 100, 150, 200, 300, 400, 500];
 const START_CASH = 10;                  // enough for the first Intern, so the first action is a hire
-const SELL_STAGE = 2;                   // selling the company unlocks at this stage index
+const XP_DIVISOR = 25000;               // experience total = floor(cbrt(lifetime earnings / XP_DIVISOR))
+                                        // cube root keeps later companies faster but not explosive (1st $1B ~106 min, 2nd ~30 min)
+const ECON_VERSION = 2;                 // 2 = cube-root experience; older saves are capped to the new rule on load
+// Weekly competition: each sale scores 10 points per x10 of sale value from $100K ($1M = 10, $1B = 40),
+// plus a speed bonus of up to +50% for a company built in under an hour.
+const SPEED_BONUS_MAX = 0.5, SPEED_BONUS_MIN = 60;
+const FIREBASE_CONFIG = null;           // filled in after the Firebase project exists (global leaderboard)
 
 const GENS = [
   { id:'intern', icon:'🧑‍🎓', cost:10,    inc:0.2 },
@@ -370,7 +424,7 @@ const STAGE_DESC = {
   en: {
     garage:'Just you, a laptop and an idea.',
     preseed:'A private investor believes in you and puts in the first money.',
-    seed:'Your first official funding round. From here you can sell the company.',
+    seed:'Your first official funding round. Usually from here you can already sell the company.',
     a:'Investors fund your growth: a real team and first customers.',
     b:'You enter new markets and close big deals.',
     unicorn:'Worth a billion dollars. In tech this is called a "unicorn".',
@@ -380,7 +434,7 @@ const STAGE_DESC = {
   he: {
     garage:'רק אתה, מחשב נייד ורעיון.',
     preseed:'משקיע פרטי מאמין בך ומכניס את הכסף הראשון.',
-    seed:'סבב הגיוס הרשמי הראשון. מכאן אפשר למכור את החברה.',
+    seed:'סבב הגיוס הרשמי הראשון. בדרך כלל מכאן כבר אפשר למכור את החברה.',
     a:'משקיעים מממנים את הצמיחה: צוות אמיתי ולקוחות ראשונים.',
     b:'החברה נכנסת לשווקים חדשים וסוגרת עסקאות גדולות.',
     unicorn:'שווי של מיליארד דולר. בהייטק קוראים לזה "יוניקורן".',
@@ -402,8 +456,12 @@ const TERMS = {
     stage:['📈','Company stage','From the Garage to the stock market. The bar at the top shows how close the next stage is. Tap the stage badge to see all stages.'],
     double:['📺','Double income','Watch a short ad to double your income for 30 minutes. You can stack up to 4 hours.'],
     offline:['🌙','Earnings while away','When you are not playing, your team keeps earning for up to 2 hours. When you come back you can collect, or watch an ad to get 2 times more.'],
-    sell:['🏁','Selling the company','From the "First Funding Round" stage you can sell the company. You start a new company from zero and get experience points. Best time: when the button pulses.'],
-    xp:['🎓','Experience points','You get them when you sell a company. Each point increases income by 10%, forever, in every next company.'],
+    sell:['🏁','Selling the company','You can sell the company as soon as you have a new experience point to collect, usually already at the "First Funding Round" stage. You start a new company from zero and get experience points and competition points. Best time: when the button pulses.'],
+    xp:['🎓','Experience points','They come from all the money you have ever earned, and you collect them when you sell a company: each sale gives the points added since the previous sale. Each new point needs more money than the one before. Each point increases income by 10%, forever.'],
+    compete:['🏆','Weekly competition','Everyone competes on one global leaderboard. A week runs from Sunday 00:00 to Saturday night, Israel time. Then the winner is announced and a new week starts.'],
+    points:['🎯','Points per sale','Every company you sell earns points by its sale value: $1M = 10, $10M = 20, $1B = 40. Every 10 times more value adds 10 points.'],
+    speed:['⚡','Speed bonus','A company built in under an hour earns up to 50% more points. The faster you built it, the bigger the bonus.'],
+    weekScore:['📊','Weekly score','Your weekly score is the sum of points from all the companies you sold this week. The leaderboard also shows how many you sold, your biggest sale and your fastest company.'],
   },
   he: {
     tap:['💻','כתוב קוד','כל לחיצה מכניסה כסף מיד. לחיצה שווה יותר ככל שההכנסה שלך גדלה.'],
@@ -416,8 +474,12 @@ const TERMS = {
     stage:['📈','שלב החברה','מהמוסך ועד הבורסה. הפס למעלה מראה כמה נשאר לשלב הבא. לחץ על תג השלב כדי לראות את כל השלבים.'],
     double:['📺','הכנסה כפולה','צפה בפרסומת קצרה וההכנסה שלך תוכפל ל-30 דקות. אפשר לצבור עד 4 שעות.'],
     offline:['🌙','רווח בזמן שלא היית','כשאתה לא במשחק, הצוות ממשיך להרוויח עד שעתיים. כשתחזור תוכל לאסוף, או לצפות בפרסומת ולקבל פי 2.'],
-    sell:['🏁','מכירת החברה','משלב "גיוס ראשון" אפשר למכור את החברה. מתחילים חברה חדשה מאפס ומקבלים נקודות ניסיון. הזמן הכי טוב: כשהכפתור מהבהב.'],
-    xp:['🎓','נקודות ניסיון','מקבלים אותן כשמוכרים חברה. כל נקודה מגדילה את ההכנסה ב-10%, לתמיד, בכל החברות הבאות.'],
+    sell:['🏁','מכירת החברה','אפשר למכור את החברה ברגע שיש לך נקודת ניסיון חדשה לאסוף, בדרך כלל כבר בשלב "גיוס ראשון". מתחילים חברה חדשה מאפס, ומקבלים נקודות ניסיון ונקודות לתחרות. הזמן הכי טוב: כשהכפתור מהבהב.'],
+    xp:['🎓','נקודות ניסיון','הן מחושבות לפי כל הכסף שהרווחת אי פעם, ואוספים אותן כשמוכרים חברה: כל מכירה נותנת את הנקודות שנוספו מאז המכירה הקודמת. כל נקודה חדשה דורשת יותר כסף מהקודמת. כל נקודה מגדילה את ההכנסה ב-10%, לתמיד.'],
+    compete:['🏆','תחרות שבועית','כל השחקנים מתחרים בלוח תוצאות עולמי אחד. שבוע מתחיל ביום ראשון בחצות ונגמר במוצאי שבת, לפי שעון ישראל. אז מוכרז המנצח ומתחיל שבוע חדש.'],
+    points:['🎯','נקודות על מכירה','כל חברה שמכרת מזכה בנקודות לפי סכום המכירה: מכירה ב-$1M שווה 10 נקודות, ב-$10M שווה 20, וב-$1B שווה 40. כל הכפלה פי 10 בשווי מוסיפה 10 נקודות.'],
+    speed:['⚡','בונוס מהירות','חברה שנבנתה בפחות משעה מקבלת עד 50% נקודות נוספות. ככל שבנית אותה מהר יותר, הבונוס גדול יותר.'],
+    weekScore:['📊','ציון שבועי','הציון השבועי הוא סכום הנקודות מכל החברות שמכרת השבוע. בלוח רואים גם כמה חברות מכרת, את המכירה הגדולה ואת החברה הכי מהירה.'],
   },
 };
 TERMS.en.android = ['🤖','Android','In Chrome, open the menu (⋮) and tap "Install app" or "Add to Home screen".'];
@@ -428,7 +490,8 @@ TERMS.he.iphone = ['🍎','אייפון','ב-Safari לחץ על "שתף" ובח�
 TERMS.he.offlinePlay = ['✈️','עובד בלי אינטרנט','אחרי ההתקנה המשחק נפתח ממסך הבית ועובד גם בלי אינטרנט. ההתקדמות נשמרת בטלפון.'];
 const TERM_GROUPS = {
   install: ['android','iphone','offlinePlay'],
-  all: ['tap','hire','cash','income','cost','bonus','value','stage','double','offline','sell','xp'],
+  all: ['tap','hire','cash','income','cost','bonus','value','stage','double','offline','sell','xp','compete'],
+  compete: ['compete','points','speed','weekScore'],
   numbers: ['cash','income','value','stage'],
   team: ['hire','cost','bonus'],
   xp: ['sell','xp'],
@@ -452,7 +515,7 @@ const STR = {
     exitLocked:'Sell company 🔒', exitGain:'Sell company {n}', exitAria:'Sell the company',
     helpAria:'Terms and how to play', infoAria:'Explanation', stagesAria:'All company stages',
     hintTap:'Tap "Write code" to earn money.', hintHire:'You have enough money: hire your first Intern below!',
-    xpLbl:'Experience points:', xpBonus:'(income bonus {p})', version:'v0.5', langBtn:'🌐 עברית',
+    xpLbl:'Experience points:', xpBonus:'(income bonus {p})', version:'v0.6', langBtn:'🌐 עברית',
     adLoading:'Loading the ad…', adCancelled:'The ad was closed before the end, so there is no reward this time.',
     adFailed:'No ad is available right now. Try again in a minute.', adNotReady:'Ads are still loading. Try again in a few seconds.',
     adNoConsent:'Ads are off because of your privacy choices. You can change them under "Privacy".',
@@ -470,7 +533,20 @@ const STR = {
     offTitle:'Welcome back!', offText:'You were away for {t}{cap}. Meanwhile your team earned:',
     offCap:' (we count up to 2 hours)', offCollect:'Collect', offDouble:'📺 Watch ad, collect 2 times more',
     exitTitle:'Sell the company?',
-    exitLockedText:'You can sell the company from the "{stage}" stage (company value {v}). Keep growing!',
+    exitLockedText:'Selling now would give no new experience points. Experience comes from all the money you have ever earned: {v} more to the next point. Keep growing!',
+    kvCompete:'Competition points', kvPractice:'Not counted (developer tools used)',
+    toastPoints:'🏆 {p} points in this week\'s competition', toastPractice:'🧪 This sale is not counted in the competition because developer tools were used.',
+    lbAria:'Weekly leaderboard', lbTitle:'🏆 Weekly leaderboard', lbEnds:'Ends in {t}', lbHow:'How is the score calculated?',
+    lbWinner:'🥇 Last week\'s winner: {n} with {p} points', lbScore:'Your score this week', lbSales:'Companies sold',
+    lbBest:'Biggest sale', lbFastest:'Fastest company', lbMin:'{m} min', lbNickIs:'Your nickname: {n}', lbNickNone:'No nickname yet',
+    lbNickChange:'Change', lbNickChoose:'Choose a nickname',
+    lbOffline:'The global leaderboard is not connected yet. Your weekly score is saved on this device.',
+    lbLoading:'Loading…', lbEmpty:'No sales this week yet. Be the first!',
+    lbError:'Could not load the leaderboard. Check the internet connection and try again.', lbYou:' (you)',
+    lbRowStats:'{s} sold · biggest {b} · fastest {m}', competeTitle:'The weekly competition',
+    nickTitle:'Choose a nickname', nickText:'This name appears on the global leaderboard next to your score. No sign-up and no email.',
+    nickSave:'Save', nickLater:'Later', nickErr:'A nickname needs 2 to 16 characters.',
+    tDH:'{d}d {h}h', tHM:'{h}h {m}m',
     exitOffer:'A buyer wants to acquire your company. If you sell, you start a new company from zero and get experience points. Each point increases income by 10% forever.',
     kvValuation:'Company value', kvRepGain:'Experience points you get', kvBonusNow:'Income bonus now', kvBonusAfter:'Income bonus after selling',
     exitNote:'Reset: employees, cash and stage. Kept: experience points and active double income.',
@@ -506,7 +582,7 @@ const STR = {
     exitLocked:'מכור חברה 🔒', exitGain:'מכור חברה {n}', exitAria:'מכירת החברה',
     helpAria:'מונחים והסבר', infoAria:'הסבר', stagesAria:'כל שלבי החברה',
     hintTap:'לחץ על "כתוב קוד" כדי להרוויח כסף.', hintHire:'יש לך מספיק כסף: גייס את המתמחה הראשון שלך למטה!',
-    xpLbl:'נקודות ניסיון:', xpBonus:'(בונוס הכנסה {p})', version:'גרסה 0.5', langBtn:'🌐 English',
+    xpLbl:'נקודות ניסיון:', xpBonus:'(בונוס הכנסה {p})', version:'גרסה 0.6', langBtn:'🌐 English',
     adLoading:'טוען פרסומת…', adCancelled:'הפרסומת נסגרה לפני הסוף, ולכן הפעם אין פרס.',
     adFailed:'אין כרגע פרסומת זמינה. נסה שוב בעוד דקה.', adNotReady:'הפרסומות עוד נטענות. נסה שוב בעוד כמה שניות.',
     adNoConsent:'הפרסומות כבויות לפי בחירות הפרטיות שלך. אפשר לשנות אותן ב"פרטיות".',
@@ -524,7 +600,20 @@ const STR = {
     offTitle:'טוב שחזרת!', offText:'לא היית כאן {t}{cap}. בזמן הזה הצוות הרוויח:',
     offCap:' (סופרים עד שעתיים)', offCollect:'אסוף', offDouble:'📺 צפה בפרסומת ואסוף פי 2',
     exitTitle:'למכור את החברה?',
-    exitLockedText:'אפשר למכור את החברה רק משלב "{stage}" (שווי חברה {v}). תמשיך לגדול!',
+    exitLockedText:'מכירה עכשיו לא תיתן נקודות ניסיון חדשות. נקודות ניסיון מחושבות לפי כל הכסף שהרווחת אי פעם: חסרים עוד {v} לנקודה הבאה. תמשיך לגדול!',
+    kvCompete:'נקודות לתחרות', kvPractice:'לא נספר (נעשה שימוש בכלי פיתוח)',
+    toastPoints:'🏆 {p} נקודות בתחרות השבועית', toastPractice:'🧪 המכירה הזו לא נספרת בתחרות, כי נעשה שימוש בכלי פיתוח.',
+    lbAria:'לוח התוצאות השבועי', lbTitle:'🏆 לוח התוצאות השבועי', lbEnds:'נגמר בעוד {t}', lbHow:'איך מחושב הציון?',
+    lbWinner:'🥇 המנצח של השבוע שעבר: {n} עם {p} נקודות', lbScore:'הציון שלך השבוע', lbSales:'חברות שנמכרו',
+    lbBest:'המכירה הגדולה', lbFastest:'החברה הכי מהירה', lbMin:'{m} דק׳', lbNickIs:'הכינוי שלך: {n}', lbNickNone:'עוד אין לך כינוי',
+    lbNickChange:'שנה', lbNickChoose:'בחר כינוי',
+    lbOffline:'לוח התוצאות העולמי עוד לא מחובר. הציון השבועי שלך נשמר במכשיר.',
+    lbLoading:'טוען…', lbEmpty:'עוד אין מכירות השבוע. תהיה הראשון!',
+    lbError:'לא הצלחנו לטעון את לוח התוצאות. בדוק את החיבור לאינטרנט ונסה שוב.', lbYou:' (אתה)',
+    lbRowStats:'{s} מכירות · הגדולה {b} · הכי מהירה {m}', competeTitle:'התחרות השבועית',
+    nickTitle:'בחר כינוי', nickText:'השם הזה יופיע בלוח התוצאות העולמי ליד הציון שלך. בלי הרשמה ובלי אימייל.',
+    nickSave:'שמור', nickLater:'אחר כך', nickErr:'כינוי צריך להיות באורך 2 עד 16 תווים.',
+    tDH:'{d} ימים ו-{h} שעות', tHM:'{h} שעות ו-{m} דקות',
     exitOffer:'קונה רוצה לרכוש את החברה שלך. אם תמכור, תתחיל חברה חדשה מאפס ותקבל נקודות ניסיון. כל נקודה מגדילה את ההכנסה ב-10%, לתמיד.',
     kvValuation:'שווי החברה', kvRepGain:'נקודות ניסיון שתקבל', kvBonusNow:'בונוס הכנסה עכשיו', kvBonusAfter:'בונוס הכנסה אחרי המכירה',
     exitNote:'מתאפס: העובדים, הכסף והשלב. נשמר: נקודות הניסיון והכנסה כפולה פעילה.',
@@ -560,11 +649,14 @@ function track(name, params = {}) {
 }
 
 /* ================= State & save ================= */
+// Experience points for a given lifetime total (epsilon guards exact cubes against rounding).
+function xpFor(total) { return Math.floor(Math.cbrt(Math.max(0, total) / XP_DIVISOR) + 1e-9); }
 function fresh() {
   const now = Date.now();
   return { v:1, cash:START_CASH, runEarned:0, totalEarned:0, owned:GENS.map(() => 0), rep:0, exits:0,
     boostUntil:0, lastSeen:now, taps:0, createdAt:now, runStartedAt:now, buyMode:1,
-    adsWatched:0, stageIdx:0, playSec:0, lang:detectLang(), seenIntro:false, tips:{} };
+    adsWatched:0, stageIdx:0, playSec:0, lang:detectLang(), seenIntro:false, tips:{},
+    nick:'', runTainted:false, season:null, prevSeason:null, econ:ECON_VERSION };
 }
 function load() {
   try {
@@ -577,6 +669,11 @@ function load() {
     if (!LANGS.includes(merged.lang)) merged.lang = detectLang();
     if (!merged.tips || typeof merged.tips !== 'object') merged.tips = {};
     if (![1, 10, 100, 'max'].includes(merged.buyMode)) merged.buyMode = 1;
+    if (typeof merged.nick !== 'string') merged.nick = '';
+    if (merged.season && typeof merged.season !== 'object') merged.season = null;
+    if (s.econ !== ECON_VERSION) {          // saved under an older experience rule: cap points to what the new rule gives
+      merged.rep = Math.min(merged.rep, xpFor(merged.totalEarned)); merged.econ = ECON_VERSION;
+    }
     return merged;
   } catch (_) { return null; }
 }
@@ -657,7 +754,33 @@ const genIncome = i => GENS[i].inc * S.owned[i] * Math.pow(2, milestoneCount(S.o
 const baseIncome = () => GENS.reduce((sum, _, i) => sum + genIncome(i), 0);
 const income = () => baseIncome() * (boostActive() ? 2 : 1);
 const valuation = () => baseIncome() * VAL_MULT;
-const exitGain = () => Math.floor(Math.sqrt(valuation() / 1e6));
+// Experience comes from everything ever earned; a sale gives only what was added since the last sale.
+const xpTotal = () => xpFor(S.totalEarned);
+const exitGain = () => Math.max(0, xpTotal() - S.rep);
+const nextXpAt = () => Math.pow(S.rep + 1, 3) * XP_DIVISOR;          // lifetime earnings needed for the next point
+// Competition points for selling a company worth v, built in m minutes.
+function salePoints(v, m) {
+  const base = 10 * Math.log10(Math.max(v, 1) / 1e5);
+  const bonus = 1 + SPEED_BONUS_MAX * Math.max(0, 1 - m / SPEED_BONUS_MIN);
+  return Math.max(0, Math.round(base * bonus));
+}
+// Seasons run Sunday 00:00 to Saturday 24:00, Israel time. Season id = that Sunday's date (YYYY-MM-DD).
+function israelParts(ms) {
+  const f = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jerusalem', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', weekday: 'short', hourCycle: 'h23' });
+  const p = {}; f.formatToParts(new Date(ms)).forEach(x => { p[x.type] = x.value; });
+  return { y: +p.year, mo: +p.month, d: +p.day, h: +p.hour, mi: +p.minute, s: +p.second,
+    wd: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].indexOf(p.weekday) };
+}
+function seasonInfo(ms = Date.now()) {
+  const p = israelParts(ms);
+  const offset = Date.UTC(p.y, p.mo - 1, p.d, p.h, p.mi, p.s) - Math.floor(ms / 1000) * 1000;   // Israel minus UTC
+  const startLocal = Date.UTC(p.y, p.mo - 1, p.d - p.wd);
+  const id = new Date(startLocal).toISOString().slice(0, 10);
+  const prevId = new Date(startLocal - 7 * 864e5).toISOString().slice(0, 10);
+  const endsAt = startLocal + 7 * 864e5 - offset;
+  return { id, prevId, endsAt };
+}
 const tapValue = () => 1 + 0.05 * income();
 const stageIndex = v => { let k = 0; STAGES.forEach((s, i) => { if (v >= s.v) k = i; }); return k; };
 
@@ -817,7 +940,7 @@ function render(force) {
   eb.textContent = g >= 1 ? t('exitGain', { n: iso('+' + fmt(g)) }) : t('exitLocked');
   eb.classList.toggle('ready', g >= 1);
   // Pulse when selling now would at least double the player's experience (min 10 for the first sale).
-  eb.classList.toggle('hot', g >= Math.max(10, S.rep));
+  eb.classList.toggle('hot', g >= Math.max(5, Math.ceil(S.rep / 2)));   // a good deal: +50% experience (at least 5 points)
 
   // Double income
   const left = S.boostUntil - Date.now(), bb = $('boostBtn');
@@ -978,7 +1101,7 @@ $('introStart').addEventListener('click', () => { $('introModal').classList.remo
 $('introHelp').addEventListener('click', () => { $('introModal').classList.remove('show'); openHelp('all', 'helpTitle', 'intro'); });
 $('helpBtn').addEventListener('click', () => openHelp('all', 'helpTitle', 'header'));
 $('helpClose').addEventListener('click', () => { $('helpModal').classList.remove('show'); finishIntro(); });
-const INFO_TITLES = { numbers: 'infoNumbersTitle', team: 'infoTeamTitle', xp: 'infoXpTitle', install: 'installTitle' };
+const INFO_TITLES = { numbers: 'infoNumbersTitle', team: 'infoTeamTitle', xp: 'infoXpTitle', install: 'installTitle', compete: 'competeTitle' };
 document.querySelectorAll('[data-info]').forEach(b => b.addEventListener('click', () =>
   openHelp(b.dataset.info, INFO_TITLES[b.dataset.info], 'info_' + b.dataset.info)));
 $('stageBtn').addEventListener('click', () => { renderStages(); $('stagesModal').classList.add('show'); track('stages_opened'); });
@@ -987,14 +1110,17 @@ $('stagesClose').addEventListener('click', () => $('stagesModal').classList.remo
 // Sell the company (prestige)
 $('exitBtn').addEventListener('click', () => {
   const g = exitGain(), val = valuation();
+  const mins = (Date.now() - S.runStartedAt) / 60000;
   track('exit_screen_opened', { gain: g });
   $('exitText').textContent = g < 1
-    ? t('exitLockedText', { v: money(STAGES[SELL_STAGE].v), stage: stageName(SELL_STAGE) })
+    ? t('exitLockedText', { v: money(nextXpAt() - S.totalEarned) })
     : t('exitOffer');
   const kv = $('exitKv');
   kv.innerHTML = '';
-  [[t('kvValuation'), money(val)], [t('kvRepGain'), iso('+' + fmt(g))],
-   [t('kvBonusNow'), pct(S.rep * REP_BONUS * 100)], [t('kvBonusAfter'), pct((S.rep + g) * REP_BONUS * 100)]]
+  const rows = [[t('kvValuation'), money(val)], [t('kvRepGain'), iso('+' + fmt(g))],
+   [t('kvBonusNow'), pct(S.rep * REP_BONUS * 100)], [t('kvBonusAfter'), pct((S.rep + g) * REP_BONUS * 100)]];
+  if (g >= 1) rows.push([t('kvCompete'), S.runTainted ? t('kvPractice') : iso('+' + salePoints(val, mins))]);
+  rows
     .forEach(([a, b]) => { const d1 = document.createElement('div'), d2 = document.createElement('div');
       d1.textContent = a; d2.textContent = b; kv.append(d1, d2); });
   $('exitConfirm').disabled = g < 1;
@@ -1004,13 +1130,141 @@ $('exitCancel').addEventListener('click', () => $('exitModal').classList.remove(
 $('exitConfirm').addEventListener('click', () => {
   const g = exitGain();
   if (g < 1) return;
-  track('exit', { gain: g, valuation: Math.round(valuation()), run_sec: Math.round((Date.now() - S.runStartedAt) / 1000), exit_no: S.exits + 1 });
+  const val = valuation(), mins = (Date.now() - S.runStartedAt) / 60000;
+  const counted = !S.runTainted, pts = counted ? salePoints(val, mins) : 0;
+  track('exit', { gain: g, valuation: Math.round(val), run_sec: Math.round(mins * 60), exit_no: S.exits + 1, points: pts, counted });
+  if (counted) recordSale(val, mins, pts);
   S.rep += g; S.exits++;
   S.cash = START_CASH; S.runEarned = 0; S.owned = GENS.map(() => 0); S.stageIdx = 0; S.runStartedAt = Date.now();
+  S.runTainted = false;
   $('exitModal').classList.remove('show');
   toast(t('toastExit', { r: iso(fmt(g)) }));
+  toast(counted ? t('toastPoints', { p: iso('+' + pts) }) : t('toastPractice'), counted ? null : 'tip', 4500);
   save(); render(true);
+  if (counted) { LB.sync(); if (!S.nick) setTimeout(() => openNick('first_sale'), 900); }
 });
+
+/* ================= Weekly competition ================= */
+function currentSeason() {
+  const si = seasonInfo();
+  if (!S.season || S.season.id !== si.id) {
+    if (S.season && S.season.sales > 0) S.prevSeason = { ...S.season };
+    S.season = { id: si.id, score: 0, sales: 0, best: 0, fastestMin: 0, pending: false };
+  }
+  return S.season;
+}
+function recordSale(val, mins, pts) {
+  const s = currentSeason();
+  s.score += pts; s.sales += 1;
+  s.best = Math.max(s.best, val);
+  s.fastestMin = s.fastestMin ? Math.min(s.fastestMin, mins) : mins;
+  s.pending = true;
+}
+const lbNum = n => iso(Math.round(n).toLocaleString('en-US'));
+function dh(ms) {
+  const h = Math.max(0, Math.floor(ms / 3600e3)), d = Math.floor(h / 24);
+  return d ? t('tDH', { d, h: h % 24 }) : t('tHM', { h, m: Math.max(0, Math.floor(ms / 60e3) % 60) });
+}
+
+// Global leaderboard client. Talks to Firebase through leaderboard.js (window.G2ELB), loaded only when configured.
+const LB = {
+  api: null, loading: null, error: null,
+  connected() { return !!(window.G2ELB_MOCK || FIREBASE_CONFIG); },
+  ensure() {
+    if (this.api) return Promise.resolve(this.api);
+    if (window.G2ELB_MOCK) { this.api = window.G2ELB_MOCK; return Promise.resolve(this.api); }
+    if (!FIREBASE_CONFIG) return Promise.resolve(null);
+    if (!this.loading) {
+      this.loading = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'leaderboard.js'; s.onload = resolve; s.onerror = () => reject(new Error('load'));
+        document.head.appendChild(s);
+      }).then(() => window.G2ELB.init(FIREBASE_CONFIG)).then(() => (this.api = window.G2ELB))
+        .catch(e => { this.loading = null; this.error = String(e && e.message || e); throw e; });
+    }
+    return this.loading;
+  },
+  async sync() {
+    const s = currentSeason();
+    if (!s.pending || !S.nick || !this.connected()) return false;
+    try {
+      const api = await this.ensure(); if (!api) return false;
+      await api.submit(s.id, { name: S.nick, score: s.score, sales: s.sales, best: s.best,
+        fastestMin: Math.round(s.fastestMin * 10) / 10, lang: S.lang });
+      s.pending = false; save(); track('score_submitted', { score: s.score, sales: s.sales });
+      return true;
+    } catch (e) { this.error = String(e && e.message || e); track('score_submit_failed', { error: this.error }); return false; }
+  },
+};
+
+// Nickname
+function openNick(from) {
+  $('nickInput').value = S.nick || '';
+  $('nickErr').textContent = '';
+  $('nickModal').classList.add('show');
+  track('nick_prompt', { from });
+  setTimeout(() => { try { $('nickInput').focus(); } catch (_) {} }, 50);
+}
+$('nickSave').addEventListener('click', async () => {
+  const v = $('nickInput').value.trim().replace(/\s+/g, ' ');
+  if (v.length < 2 || v.length > 16) { $('nickErr').textContent = t('nickErr'); return; }
+  const renamed = !!S.nick && S.nick !== v;
+  S.nick = v; save();
+  $('nickModal').classList.remove('show');
+  track('nick_set', { renamed });
+  const s = currentSeason();
+  if (renamed && !s.pending && s.sales > 0) s.pending = true;   // resend totals with the new name
+  await LB.sync();
+  if ($('lbModal').classList.contains('show')) renderLB();
+});
+$('nickCancel').addEventListener('click', () => $('nickModal').classList.remove('show'));
+
+// Leaderboard screen
+async function renderLB() {
+  const si = seasonInfo(), s = currentSeason();
+  $('lbEnds').textContent = t('lbEnds', { t: dh(si.endsAt - Date.now()) });
+  $('lbMine').innerHTML = '';
+  const mine = document.createElement('div'); mine.className = 'lbme';
+  const stats = [[t('lbScore'), lbNum(s.score)], [t('lbSales'), lbNum(s.sales)],
+    [t('lbBest'), s.best ? money(s.best) : '—'], [t('lbFastest'), s.fastestMin ? t('lbMin', { m: iso(s.fastestMin.toFixed(1)) }) : '—']];
+  stats.forEach(([a, b]) => { const c = document.createElement('div'); c.innerHTML = '<span></span><b></b>';
+    c.firstChild.textContent = a; c.lastChild.textContent = b; mine.appendChild(c); });
+  $('lbMine').appendChild(mine);
+  $('lbNick').textContent = S.nick ? t('lbNickIs', { n: S.nick }) : t('lbNickNone');
+  $('lbNickBtn').textContent = t(S.nick ? 'lbNickChange' : 'lbNickChoose');
+  const list = $('lbList'), status = $('lbStatus');
+  list.innerHTML = ''; $('lbWinner').textContent = '';
+  if (!LB.connected()) { status.textContent = t('lbOffline'); return; }
+  status.textContent = t('lbLoading');
+  try {
+    await LB.sync();
+    const api = await LB.ensure();
+    const [rows, prev] = await Promise.all([api.top(si.id, 50), api.top(si.prevId, 1).catch(() => [])]);
+    if (prev && prev[0]) $('lbWinner').textContent = t('lbWinner', { n: prev[0].name, p: lbNum(prev[0].score) });
+    status.textContent = rows.length ? '' : t('lbEmpty');
+    rows.forEach((r, i) => list.appendChild(lbRow(i + 1, r)));
+    if (S.nick && s.sales > 0 && !rows.some(r => r.me)) {
+      const rank = await api.rank(si.id, s.score);
+      const sep = document.createElement('div'); sep.className = 'lbsep'; sep.textContent = '⋯'; list.appendChild(sep);
+      list.appendChild(lbRow(rank, { name: S.nick, score: s.score, sales: s.sales, best: s.best, fastestMin: s.fastestMin, me: true }));
+    }
+  } catch (e) { status.textContent = t('lbError'); track('lb_error', { error: String(e && e.message || e) }); }
+}
+function lbRow(rank, r) {
+  const el = document.createElement('div');
+  el.className = 'lbrow' + (r.me ? ' me' : '');
+  el.innerHTML = '<div class="lbr"></div><div class="lbn"><b></b><small></small></div><div class="lbp"></div>';
+  el.querySelector('.lbr').textContent = rank <= 3 ? ['🥇','🥈','🥉'][rank - 1] : iso(String(rank));
+  el.querySelector('b').textContent = r.name + (r.me ? t('lbYou') : '');
+  el.querySelector('small').textContent = t('lbRowStats', { s: lbNum(r.sales), b: money(r.best || 0),
+    m: r.fastestMin ? t('lbMin', { m: iso(Number(r.fastestMin).toFixed(1)) }) : '—' });
+  el.querySelector('.lbp').textContent = lbNum(r.score);
+  return el;
+}
+$('lbBtn').addEventListener('click', () => { $('lbModal').classList.add('show'); track('leaderboard_opened'); renderLB(); });
+$('lbClose').addEventListener('click', () => $('lbModal').classList.remove('show'));
+$('lbNickBtn').addEventListener('click', () => openNick('leaderboard'));
+$('lbHow').addEventListener('click', () => openHelp('compete', 'competeTitle', 'leaderboard'));
 
 // Offline earnings
 let pendingOffline = 0;
@@ -1064,10 +1318,10 @@ function renderDev() {
 function closeDev() { $('devModal').classList.remove('show'); resetArmed = false; $('dReset').textContent = t('dReset'); }
 $('devBtn').addEventListener('click', () => { renderDev(); $('devModal').classList.add('show'); });
 $('dClose').addEventListener('click', closeDev);
-$('dSkip10').addEventListener('click', () => { earn(income() * 600); checkStage(); render(); renderDev(); });
-$('dSkip60').addEventListener('click', () => { earn(income() * 3600); checkStage(); render(); renderDev(); });
-$('dSpeed').addEventListener('click', () => { speed = speed === 1 ? 10 : 1; $('dSpeed').textContent = t('dSpeed', { n: iso('×' + speed) }); });
-$('dOffline').addEventListener('click', () => { closeDev(); S.lastSeen = Date.now() - 3600 * 1000; processOffline(); });
+$('dSkip10').addEventListener('click', () => { S.runTainted = true; earn(income() * 600); checkStage(); render(); renderDev(); });
+$('dSkip60').addEventListener('click', () => { S.runTainted = true; earn(income() * 3600); checkStage(); render(); renderDev(); });
+$('dSpeed').addEventListener('click', () => { speed = speed === 1 ? 10 : 1; if (speed > 1) S.runTainted = true; $('dSpeed').textContent = t('dSpeed', { n: iso('×' + speed) }); });
+$('dOffline').addEventListener('click', () => { closeDev(); S.runTainted = true; S.lastSeen = Date.now() - 3600 * 1000; processOffline(); });
 $('dReplay').addEventListener('click', () => { closeDev(); $('introModal').classList.add('show'); });
 $('dReset').addEventListener('click', () => {
   if (!resetArmed) { resetArmed = true; $('dReset').textContent = t('dResetConfirm'); return; }
@@ -1136,7 +1390,7 @@ $('verLbl').addEventListener('click', () => {
 });
 
 /* ================= Android app hooks (called from native.js) ================= */
-const MODAL_ORDER = ['offlineModal', 'exitModal', 'devModal', 'stagesModal', 'helpModal', 'introModal'];
+const MODAL_ORDER = ['nickModal', 'lbModal', 'offlineModal', 'exitModal', 'devModal', 'stagesModal', 'helpModal', 'introModal'];
 window.__g2eHooks = {
   // Android back button: close the top window. Returns true when something was closed.
   onBack() {
@@ -1153,7 +1407,7 @@ window.__g2eHooks = {
     return false;
   },
   pause() { if (paused) return; paused = true; stopLoop(); save(); track('session_pause', { native: true }); },
-  resume() { if (!paused) return; paused = false; processOffline(); last = performance.now(); startLoop(); render(); },
+  resume() { if (!paused) return; paused = false; processOffline(); last = performance.now(); startLoop(); render(); LB.sync(); },
 };
 if (NATIVE) {
   const s = document.createElement('script');
@@ -1170,6 +1424,8 @@ applyLang();
 if (!S.seenIntro) { $('introModal').classList.add('show'); track('tutorial_shown', { lang: S.lang }); }
 if (saved) processOffline();
 startLoop();
+currentSeason();
+setTimeout(() => LB.sync(), 3000);
 setInterval(() => { if (!document.hidden && !paused) save(); }, 5000);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { save(); track('session_pause'); }
@@ -1179,7 +1435,8 @@ window.addEventListener('pagehide', () => { if (!document.hidden) save(); });
 
 // Tiny debug handle for automated tests.
 window.__g2e = { get S() { return S; }, income, valuation, exitGain, costN, maxAffordable, buy, earn, EVENTS,
-  processOffline, setLang, STR, GEN_TXT, STAGE_TXT, STAGE_DESC, TERMS, TERM_GROUPS, openHelp };
+  processOffline, setLang, STR, GEN_TXT, STAGE_TXT, STAGE_DESC, TERMS, TERM_GROUPS, openHelp,
+  salePoints, seasonInfo, xpTotal, nextXpAt, render, currentSeason, LB, renderLB };
 })();
 </script>
 </body>
