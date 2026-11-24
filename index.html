@@ -361,7 +361,16 @@ const ECON_VERSION = 2;                 // 2 = cube-root experience; older saves
 // Weekly competition: each sale scores 10 points per x10 of sale value from $100K ($1M = 10, $1B = 40),
 // plus a speed bonus of up to +50% for a company built in under an hour.
 const SPEED_BONUS_MAX = 0.5, SPEED_BONUS_MIN = 60;
-const FIREBASE_CONFIG = null;           // filled in after the Firebase project exists (global leaderboard)
+// Global leaderboard (Firebase project garage-to-exit). These values identify the project and are public by design;
+// the Firestore security rules (firebase/firestore.rules) are what protect the data.
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyA0z7xF1EzQuX6-SlcXCcnxXfMoGopyMpM',
+  authDomain: 'garage-to-exit.firebaseapp.com',
+  projectId: 'garage-to-exit',
+  storageBucket: 'garage-to-exit.firebasestorage.app',
+  messagingSenderId: '66565522025',
+  appId: '1:66565522025:web:de46aaac32a83d75c7d8f8',
+};
 
 const GENS = [
   { id:'intern', icon:'🧑‍🎓', cost:10,    inc:0.2 },
@@ -515,7 +524,7 @@ const STR = {
     exitLocked:'Sell company 🔒', exitGain:'Sell company {n}', exitAria:'Sell the company',
     helpAria:'Terms and how to play', infoAria:'Explanation', stagesAria:'All company stages',
     hintTap:'Tap "Write code" to earn money.', hintHire:'You have enough money: hire your first Intern below!',
-    xpLbl:'Experience points:', xpBonus:'(income bonus {p})', version:'v0.6', langBtn:'🌐 עברית',
+    xpLbl:'Experience points:', xpBonus:'(income bonus {p})', version:'v0.6.1', langBtn:'🌐 עברית',
     adLoading:'Loading the ad…', adCancelled:'The ad was closed before the end, so there is no reward this time.',
     adFailed:'No ad is available right now. Try again in a minute.', adNotReady:'Ads are still loading. Try again in a few seconds.',
     adNoConsent:'Ads are off because of your privacy choices. You can change them under "Privacy".',
@@ -582,7 +591,7 @@ const STR = {
     exitLocked:'מכור חברה 🔒', exitGain:'מכור חברה {n}', exitAria:'מכירת החברה',
     helpAria:'מונחים והסבר', infoAria:'הסבר', stagesAria:'כל שלבי החברה',
     hintTap:'לחץ על "כתוב קוד" כדי להרוויח כסף.', hintHire:'יש לך מספיק כסף: גייס את המתמחה הראשון שלך למטה!',
-    xpLbl:'נקודות ניסיון:', xpBonus:'(בונוס הכנסה {p})', version:'גרסה 0.6', langBtn:'🌐 English',
+    xpLbl:'נקודות ניסיון:', xpBonus:'(בונוס הכנסה {p})', version:'גרסה 0.6.1', langBtn:'🌐 English',
     adLoading:'טוען פרסומת…', adCancelled:'הפרסומת נסגרה לפני הסוף, ולכן הפעם אין פרס.',
     adFailed:'אין כרגע פרסומת זמינה. נסה שוב בעוד דקה.', adNotReady:'הפרסומות עוד נטענות. נסה שוב בעוד כמה שניות.',
     adNoConsent:'הפרסומות כבויות לפי בחירות הפרטיות שלך. אפשר לשנות אותן ב"פרטיות".',
@@ -1175,11 +1184,11 @@ const LB = {
     if (window.G2ELB_MOCK) { this.api = window.G2ELB_MOCK; return Promise.resolve(this.api); }
     if (!FIREBASE_CONFIG) return Promise.resolve(null);
     if (!this.loading) {
-      this.loading = new Promise((resolve, reject) => {
+      this.loading = (window.G2ELB ? Promise.resolve() : new Promise((resolve, reject) => {   // load the client once
         const s = document.createElement('script');
-        s.src = 'leaderboard.js'; s.onload = resolve; s.onerror = () => reject(new Error('load'));
+        s.src = 'leaderboard.js'; s.onload = resolve; s.onerror = () => { s.remove(); reject(new Error('load')); };
         document.head.appendChild(s);
-      }).then(() => window.G2ELB.init(FIREBASE_CONFIG)).then(() => (this.api = window.G2ELB))
+      })).then(() => window.G2ELB.init(FIREBASE_CONFIG)).then(() => (this.api = window.G2ELB))
         .catch(e => { this.loading = null; this.error = String(e && e.message || e); throw e; });
     }
     return this.loading;
