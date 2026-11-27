@@ -80,6 +80,9 @@
   .income{display:inline-flex;align-items:center;gap:6px;margin-top:6px;background:rgba(255,255,255,.16);border-radius:999px;padding:3px 10px;color:#E6FFF4;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
   .income .x2{background:#FFD452;color:#4A2600;border-radius:999px;padding:0 8px;font-size:12px;font-weight:800}
   .val{color:#fff;font-size:13px;margin-top:8px}
+  .runclock{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.16);border-radius:999px;padding:2px 10px 2px 8px;font-weight:700;font-variant-numeric:tabular-nums}
+  .runclock svg.ic{font-size:14px}
+  .runclock b{font-weight:900}
   .val b{color:#fff;font-weight:800}
   .bar{height:10px;background:rgba(255,255,255,.22);border-radius:999px;margin-top:8px;overflow:hidden;box-shadow:inset 0 2px 0 rgba(0,0,0,.08)}
   .bar>div{height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#FFE36B,#FF9A1F);transition:width .3s}
@@ -364,7 +367,8 @@
     <div class="income" id="income"></div>
     <div class="vrow">
       <div class="vtxt"><div class="val"><span data-i18n="valueLbl"></span> <b id="valuation">$0</b></div>
-      <div class="val" id="nextStage"></div></div>
+      <div class="val" id="nextStage"></div>
+      <div class="val runclock" id="runClock"><svg class="ic"><use href="#i-clock"/></svg><span data-i18n="runTime"></span><b id="runClockT"></b></div></div>
       <button id="exitBtn" class="exit" data-i18n-aria="exitAria"></button>
     </div>
     <div class="bar"><div id="stageBar"></div></div>
@@ -734,7 +738,7 @@ const STR = {
     boostActive:'Active · {t} left · watch again to add 30 minutes',
     boostMax:'Active · {t} left (4 hour maximum)',
     cashLbl:'Cash', incomeLine:'Income: {v} per second', doubleBadge:'doubled',
-    valueLbl:'Company value:', nextStage:'Next stage: {name}, at {v} value', topStage:'You reached the top stage',
+    runTime:'Company time:', valueLbl:'Company value:', nextStage:'Next stage: {name}, at {v} value', topStage:'You reached the top stage',
     teamTitle:'Your team', modesLbl:'Hire per tap:', modeMax:'Max',
     owned:'You have {n}', cardRate:'Earning {v} per second', cardRateEach:'Each one earns {v} per second',
     cardBonus:'{n} more to double their income', cardAll:'All quantity bonuses reached',
@@ -742,7 +746,7 @@ const STR = {
     exitLocked:'Sell company', exitGain:'Sell company {n}', exitAria:'Sell the company',
     helpAria:'Terms and how to play', infoAria:'Explanation', stagesAria:'All company stages',
     hintTap:'Tap "Write code" to earn money.', hintHire:'You have enough money: hire your first Intern below!',
-    xpLbl:'Experience points:', xpBonus:'(income bonus {p})', version:'v0.12', langBtn:'עברית',
+    xpLbl:'Experience points:', xpBonus:'(income bonus {p})', version:'v0.13', langBtn:'עברית',
     adLoading:'Loading the ad…', adCancelled:'The ad was closed before the end, so there is no reward this time.',
     adFailed:'No ad is available right now. Try again in a minute.', adNotReady:'Ads are still loading. Try again in a few seconds.',
     adNoConsent:'Ads are off because of your privacy choices. You can change them under "Privacy".',
@@ -815,7 +819,7 @@ const STR = {
     boostActive:'פעילה · נשארו {t} · צפה שוב כדי להוסיף 30 דקות',
     boostMax:'פעילה · נשארו {t} (מקסימום 4 שעות)',
     cashLbl:'כסף בקופה', incomeLine:'הכנסה: {v} לשנייה', doubleBadge:'כפולה',
-    valueLbl:'שווי החברה:', nextStage:'השלב הבא: {name}, בשווי {v}', topStage:'הגעת לשלב הגבוה ביותר',
+    runTime:'זמן החברה:', valueLbl:'שווי החברה:', nextStage:'השלב הבא: {name}, בשווי {v}', topStage:'הגעת לשלב הגבוה ביותר',
     teamTitle:'הצוות שלך', modesLbl:'כמה לגייס בכל לחיצה:', modeMax:'הכי הרבה',
     owned:'יש לך {n}', cardRate:'מכניסים {v} לשנייה', cardRateEach:'כל אחד מכניס {v} לשנייה',
     cardBonus:'עוד {n} עד הכפלת ההכנסה מהם', cardAll:'כל בונוסי הכמות הושגו',
@@ -823,7 +827,7 @@ const STR = {
     exitLocked:'מכור חברה', exitGain:'מכור חברה {n}', exitAria:'מכירת החברה',
     helpAria:'מונחים והסבר', infoAria:'הסבר', stagesAria:'כל שלבי החברה',
     hintTap:'לחץ על "כתוב קוד" כדי להרוויח כסף.', hintHire:'יש לך מספיק כסף: גייס את המתמחה הראשון שלך למטה!',
-    xpLbl:'נקודות ניסיון:', xpBonus:'(בונוס הכנסה {p})', version:'גרסה 0.12', langBtn:'English',
+    xpLbl:'נקודות ניסיון:', xpBonus:'(בונוס הכנסה {p})', version:'גרסה 0.13', langBtn:'English',
     adLoading:'טוען פרסומת…', adCancelled:'הפרסומת נסגרה לפני הסוף, ולכן הפעם אין פרס.',
     adFailed:'אין כרגע פרסומת זמינה. נסה שוב בעוד דקה.', adNotReady:'הפרסומות עוד נטענות. נסה שוב בעוד כמה שניות.',
     adNoConsent:'הפרסומות כבויות לפי בחירות הפרטיות שלך. אפשר לשנות אותן ב"פרטיות".',
@@ -1250,6 +1254,8 @@ function render(force) {
     $('stageBar').style.width = Math.min(100, Math.max(0, (c - a) / (b - a) * 100)) + '%';
     $('nextStage').textContent = t('nextStage', { name: stageName(k + 1), v: money(nx.v) });
   } else { $('stageBar').style.width = '100%'; $('nextStage').textContent = t('topStage'); }
+  // How long the current company has been running (the weekly competition gives a speed bonus under an hour)
+  { const ct = clock(Date.now() - S.runStartedAt), el = $('runClockT'); if (el.textContent !== ct) el.textContent = ct; }
   $('tapValue').textContent = t('perTap', { v: iso('+$' + fmt(tapValue(), true)) });
 
   // Sell-company button
