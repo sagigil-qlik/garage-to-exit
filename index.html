@@ -271,7 +271,7 @@
   #dailyModal .big{text-align:center}
 
   /* Office scene */
-  .scene{display:block;width:100%;height:clamp(185px,25vh,240px);border-radius:22px;background:#1F4FC9;box-shadow:0 5px 0 #2A1F7A,0 12px 26px rgba(40,20,120,.28);cursor:pointer}
+  .scene{display:block;width:100%;height:clamp(300px,47vh,460px);border-radius:22px;background:#1F4FC9;touch-action:pan-y;box-shadow:0 5px 0 #2A1F7A,0 12px 26px rgba(40,20,120,.28);cursor:pointer}
   .gen.flash{animation:genFlash 1.1s ease-out}
   @keyframes genFlash{0%{box-shadow:0 0 0 4px var(--flash),var(--shadow);transform:scale(1.025)}60%{box-shadow:0 0 0 3px var(--flash),var(--shadow);transform:none}100%{box-shadow:var(--shadow)}}
 
@@ -586,7 +586,7 @@ const BOOST_MAX_MS = 4 * 3600 * 1000;   // stack up to 4 hours
 const DAILY_MIN = [10, 20, 30, 45, 60, 90, 120];
 const DAILY_FLOOR = [50, 100, 200, 400, 800, 1600, 3200];
 // Piggy bank: fills with 20% of base income per second (at least the floor), for up to 6 hours, then waits to be collected.
-const PIGGY_RATE = 0.2, PIGGY_CAP_SEC = 6 * 3600, PIGGY_FLOOR_RATE = 0.025;   // floor: a full bank is at least ~$540
+const PIGGY_RATE = 0.2, PIGGY_CAP_SEC = 5 * 60, PIGGY_FLOOR_RATE = 0.025;   // full after 5 minutes (a reason to come back to the screen often)
 const MILESTONES = [10, 25, 50, 100, 150, 200, 300, 400, 500];
 const START_CASH = 10;                  // enough for the first Intern, so the first action is a hire
 const XP_DIVISOR = 25000;               // experience total = floor(cbrt(lifetime earnings / XP_DIVISOR))
@@ -757,8 +757,8 @@ const STR = {
     hireN:'Hire {n}', hireAria:'Hire {name}', lockedName:'Coming soon', lockedDesc:'Unlocks when this company has earned {v}',
     exitLocked:'Sell company', exitGain:'Sell company {n}', exitAria:'Sell the company',
     helpAria:'Terms and how to play', infoAria:'Explanation', stagesAria:'All company stages',
-    hintTap:'Tap "Write code" to earn money.', hintHire:'You have enough money: hire your first Intern below!',
-    xpLbl:'Experience points:', xpBonus:'(income bonus {p})', version:'v0.14', langBtn:'עברית',
+    hintTap:'Tap "Write code" to earn money.', hintHire:'You have enough money: tap the glowing spot in the office to hire your first Intern!',
+    xpLbl:'Experience points:', xpBonus:'(income bonus {p})', version:'v0.15', langBtn:'עברית',
     adLoading:'Loading the ad…', adCancelled:'The ad was closed before the end, so there is no reward this time.',
     adFailed:'No ad is available right now. Try again in a minute.', adNotReady:'Ads are still loading. Try again in a few seconds.',
     adNoConsent:'Ads are off because of your privacy choices. You can change them under "Privacy".',
@@ -773,7 +773,7 @@ const STR = {
     dailyStreak:'{n} days in a row! Keep the streak going.', dailyBroken:'You missed a day, so the streak starts again from day 1.',
     dailyBig:'Big bonus', dailyBoost:'+ double income for 30 minutes', toastDaily:'Daily bonus: {v}',
     sceneAria:'Your company office', piggyTitle:'Piggy bank', piggyFillIn:'Full in {t}', piggyFull:'Full! Tap to collect',
-    piggyText:'The piggy bank fills with 20% of your income, even while you are away. After 6 hours it is full and stops filling until you collect it.',
+    piggyText:'The piggy bank fills with 20% of your income, even while you are away. After 5 minutes it is full and stops filling until you collect it.',
     piggyTextFull:'Your piggy bank is full and has stopped filling. Collect it so it starts filling again.',
     piggyLater:'Later', toastPiggy:'Collected {v} from the piggy bank!', kvPiggy:'Piggy bank (collected now)',
     notifPiggy:'Your piggy bank is full: {v} is waiting for you',
@@ -838,8 +838,8 @@ const STR = {
     hireN:'גייס {n}', hireAria:'גייס {name}', lockedName:'בקרוב', lockedDesc:'ייפתח כשהחברה הנוכחית תרוויח {v}',
     exitLocked:'מכור חברה', exitGain:'מכור חברה {n}', exitAria:'מכירת החברה',
     helpAria:'מונחים והסבר', infoAria:'הסבר', stagesAria:'כל שלבי החברה',
-    hintTap:'לחץ על "כתוב קוד" כדי להרוויח כסף.', hintHire:'יש לך מספיק כסף: גייס את המתמחה הראשון שלך למטה!',
-    xpLbl:'נקודות ניסיון:', xpBonus:'(בונוס הכנסה {p})', version:'גרסה 0.14', langBtn:'English',
+    hintTap:'לחץ על "כתוב קוד" כדי להרוויח כסף.', hintHire:'יש לך מספיק כסף: לחץ על המקום הזוהר במשרד כדי לגייס את המתמחה הראשון!',
+    xpLbl:'נקודות ניסיון:', xpBonus:'(בונוס הכנסה {p})', version:'גרסה 0.15', langBtn:'English',
     adLoading:'טוען פרסומת…', adCancelled:'הפרסומת נסגרה לפני הסוף, ולכן הפעם אין פרס.',
     adFailed:'אין כרגע פרסומת זמינה. נסה שוב בעוד דקה.', adNotReady:'הפרסומות עוד נטענות. נסה שוב בעוד כמה שניות.',
     adNoConsent:'הפרסומות כבויות לפי בחירות הפרטיות שלך. אפשר לשנות אותן ב"פרטיות".',
@@ -854,7 +854,7 @@ const STR = {
     dailyStreak:'{n} ימים ברצף! תמשיך כך.', dailyBroken:'פספסת יום, ולכן הרצף מתחיל שוב מיום 1.',
     dailyBig:'בונוס גדול', dailyBoost:'+ הכנסה כפולה ל-30 דקות', toastDaily:'בונוס יומי: {v}',
     sceneAria:'המשרד של החברה שלך', piggyTitle:'קופת חיסכון', piggyFillIn:'מלאה בעוד {t}', piggyFull:'מלאה! לחץ לאיסוף',
-    piggyText:'הקופה מתמלאת ב-20% מההכנסה שלך, גם כשאתה לא במשחק. אחרי 6 שעות היא מלאה ומפסיקה להתמלא עד שתאסוף אותה.',
+    piggyText:'הקופה מתמלאת ב-20% מההכנסה שלך, גם כשאתה לא במשחק. אחרי 5 דקות היא מלאה ומפסיקה להתמלא עד שתאסוף אותה.',
     piggyTextFull:'הקופה מלאה ולא מתמלאת יותר. אסוף אותה כדי שתתחיל להתמלא שוב.',
     piggyLater:'אחר כך', toastPiggy:'אספת {v} מהקופה!', kvPiggy:'קופת החיסכון (נאספת עכשיו)',
     notifPiggy:'קופת החיסכון מלאה: {v} מחכים לך',
@@ -1471,8 +1471,6 @@ function finishIntro() {
 }
 $('introStart').addEventListener('click', () => {
   $('introModal').classList.remove('show'); finishIntro();
-  // A brand-new player: make sure the first hire button is on screen
-  if (!S.owned.some(n => n > 0)) setTimeout(() => { const c = document.querySelector('#gens .gen'); if (c) c.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }, 250);
 });
 $('introHelp').addEventListener('click', () => { $('introModal').classList.remove('show'); openHelp('all', 'helpTitle', 'intro'); });
 $('helpBtn').addEventListener('click', () => openHelp('all', 'helpTitle', 'header'));
@@ -2047,6 +2045,8 @@ const Scene = (() => {
   const CEO = [7.2, 6, 2.8, 2];
   const SEAT_AT = [1, 3, 6, 10, 25, 50];          // head count at which each new desk appears
   let W = 0, H = 0, dpr = 1, TW = 36, TH = 18, OX = 0, OY = 0, WH = 46;
+  let BW = 0, OXW = 0, PAN = 0, PT = null, down = null;   // the floor can be wider than the screen: drag sideways to look around
+  const UZ = () => Math.min(1.1, Math.max(.9, TH / 18));      // labels grow a little with the office, not as much as the people
   let env = -1, envFrom = -1, envT = -99, bg = {};
   let shown = GENS.map(() => false), prev = GENS.map(() => 0), seatsPrev = GENS.map(() => 0), ready = false;
   let walkers = [], floats = [], parts = [], rings = [], drops = {}, focusI = -1, focusT = -99;
@@ -2077,16 +2077,26 @@ const Scene = (() => {
   function rr(x, y, w, h, r, fill, stroke = O, lw = .9) { g.beginPath(); g.roundRect(x, y, w, h, r); if (fill) { g.fillStyle = fill; g.fill(); } if (stroke) { g.strokeStyle = stroke; g.lineWidth = lw; g.stroke(); } }
   function floorShadow(u, v, rx, ry) { const [x, y] = P(u, v); g.fillStyle = 'rgba(10,8,40,.22)'; g.beginPath(); g.ellipse(x, y, rx * TW * .5, ry * TH * .5, 0, 0, 7); g.fill(); }
 
+  const panMax = () => Math.max(0, (BW - W) / 2);
+  function lookAt(i) {                                                   // glide so team i is on screen (only if it is not)
+    const z = i === FOUNDER ? CEO : ZONE[GENS[i].id], u = z[0] + z[2] / 2, v = z[1] + z[3] / 2;
+    const x0 = OXW - (BW - W) / 2 + (u - v) * TW / 2, x = x0 + PAN;
+    if (x > W * .22 && x < W * .78) return;
+    PT = Math.max(-panMax(), Math.min(panMax(), W / 2 - x0));
+  }
   function resize() {
     const r = cv.getBoundingClientRect();
     const w = Math.round(r.width), h = Math.round(r.height), d = Math.min(2, window.devicePixelRatio || 1);
     if (!w || (w === W && h === H && d === dpr)) return;
     W = w; H = h; dpr = d; cv.width = w * d; cv.height = h * d; bg = {};
-    // fit the floor and its walls: width (GU+GV)*TW/2, height (GU+GV)*TH/2 + walls + slab
-    TW = Math.min((W - 20) * 2 / (GU + GV), (H - 46) * 2 / ((GU + GV) * .5 + 2.9) );
+    // fit the floor and its walls to the height (big and readable); if it is wider than the screen, it can be dragged
+    TW = Math.min((H - 46) * 2 / ((GU + GV) * .5 + 2.9), W * .15, 60);
     TH = TW / 2; WH = TH * 2.5;
-    OX = (W - (GU + GV) * TW / 2) / 2 + GV * TW / 2;
+    BW = Math.max(W, (GU + GV) * TW / 2 + 28);
+    OXW = (BW - (GU + GV) * TW / 2) / 2 + GV * TW / 2;
     OY = (H - ((GU + GV) * TH / 2 + WH + 8)) / 2 + WH + 6;
+    PAN = Math.max(-panMax(), Math.min(panMax(), PAN));
+    OX = OXW - (BW - W) / 2 + PAN;
   }
 
   /* ---------- the place (baked once per stage and size): background, slab, floor, walls, windows, decor ---------- */
@@ -2114,6 +2124,10 @@ const Scene = (() => {
   }
   function place(e) {
     if (bg[e]) return bg[e];
+    const sw = W, sox = OX; W = BW; OX = OXW;                             // draw on the full-width world canvas
+    try { return (bg[e] = placeDraw(e)); } finally { W = sw; OX = sox; }
+  }
+  function placeDraw(e) {
     const c = document.createElement('canvas'); c.width = W * dpr; c.height = H * dpr;
     const b = c.getContext('2d'); b.scale(dpr, dpr); b.direction = 'ltr';
     const pl = PLACE[e], R = rng(17 + e);
@@ -2153,7 +2167,7 @@ const Scene = (() => {
         [['#2D7BFF', .3], ['#17B865', .55], ['#FF7A1A', .8]].forEach(([col, hv], k) => { const u = 4.35 + k * .35; poly(b, [P(u, 0, WH * .44), P(u + .22, 0, WH * .44), P(u + .22, 0, WH * (.44 + .34 * hv)), P(u, 0, WH * (.44 + .34 * hv))], col, null); });
       }
     }
-    return (bg[e] = c);
+    return c;
   }
 
   /* ---------- people ---------- */
@@ -2334,7 +2348,7 @@ const Scene = (() => {
 
   /* ---------- bubble: zone name + head count ---------- */
   function bubble(i, x, y, n, pop, ghost) {
-    const id = GENS[i].id, z = Math.max(.85, TH / 18) * (1 + .3 * pop), name = (SHORT[S.lang] || SHORT.en)[id];
+    const id = GENS[i].id, z = UZ() * (1 + .3 * pop), name = (SHORT[S.lang] || SHORT.en)[id];
     g.font = `800 ${8.2 * z}px Rubik,system-ui,sans-serif`; g.textBaseline = 'middle';
     const tw = g.measureText(name).width, num = ghost ? '?' : fmt(n);
     g.font = `900 ${9 * z}px Rubik,system-ui,sans-serif`;
@@ -2350,6 +2364,21 @@ const Scene = (() => {
     g.fillStyle = ghost ? INK : '#FFFFFF'; g.font = `900 ${9 * z}px Rubik,system-ui,sans-serif`; g.fillText(num, cx, y + .5 * z);
     g.fillStyle = '#FFFFFF'; g.beginPath(); g.moveTo(x - 3 * z, y + h / 2 - .5); g.lineTo(x + 3 * z, y + h / 2 - .5); g.lineTo(x, y + h / 2 + 4 * z); g.closePath(); g.fill();
     return [Math.min(cx - cr, px0), y - Math.max(cr, h / 2), Math.max(cx + cr, px0 + w), y + h / 2 + 4 * z];
+  }
+
+  // The hire button inside the office: '+1 $40' (or '+10 ...' with the buy mode), green when affordable.
+  function hireChip(i, x, y) {
+    const n = buyCount(i), cost = costN(i, n), ok = S.cash >= cost, z = UZ();
+    const txt = (n > 1 ? '+' + n + '  ' : '') + plain(money(cost, true));
+    g.font = `900 ${8.8 * z}px Rubik,system-ui,sans-serif`; g.textBaseline = 'middle'; g.textAlign = 'center';
+    const w = g.measureText(txt).width + 24 * z, h = 15 * z, p = ok && !reduce ? 1 + .05 * Math.sin(now * 6) : 1;
+    g.save(); g.translate(x, y + h / 2); g.scale(p, p); g.translate(-x, -y - h / 2);
+    rr(x - w / 2, y, w, h, h / 2, ok ? lin(g, 0, y, 0, y + h, [[0, '#4BE38E'], [1, '#14A35A']]) : '#B9BFD3', INK, 1.1);
+    circ(x - w / 2 + 8 * z, y + h / 2, 5 * z, '#FFFFFF', null);
+    g.fillStyle = ok ? '#14A35A' : '#8A90A8'; g.font = `900 ${10 * z}px Rubik,system-ui,sans-serif`; g.fillText('+', x - w / 2 + 8 * z, y + h / 2 + .5 * z);
+    g.fillStyle = '#FFFFFF'; g.font = `900 ${8.8 * z}px Rubik,system-ui,sans-serif`; g.fillText(txt, x + 6 * z, y + h / 2 + .5 * z);
+    g.restore();
+    return [x - w / 2, y, x + w / 2, y + h];
   }
 
   /* ---------- particles and money ---------- */
@@ -2368,7 +2397,7 @@ const Scene = (() => {
     g.globalAlpha = 1;
   }
   function coinText(x, y, txt, p) {
-    const z = Math.max(.9, TH / 18); g.globalAlpha = Math.max(0, 1 - p * p);
+    const z = UZ(); g.globalAlpha = Math.max(0, 1 - p * p);
     const yy = y - p * 20 * z;
     g.font = `900 ${10.5 * z}px Rubik,system-ui,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
     const w = g.measureText(txt).width;
@@ -2416,12 +2445,15 @@ const Scene = (() => {
     const e = ENV_OF[Math.min(S.stageIdx, ENV_OF.length - 1)];
     if (env < 0) env = e;
     else if (e !== env) { envFrom = env; env = e; envT = tm; if (!reduce) for (let q = 0; q < 4; q++) burst(W * (.15 + q * .23), 0, 10, true); }
+    if (PT != null && !(down && down.moved)) { PAN += (PT - PAN) * (reduce ? 1 : .14); if (Math.abs(PT - PAN) < .5) { PAN = PT; PT = null; } }
+    if (!ready) { const nx = GENS.findIndex((_, i) => !S.owned[i]); lookAt(S.owned.some(n => n > 0) ? FOUNDER : Math.max(0, nx)); if (PT != null) { PAN = PT; PT = null; } }
+    OX = OXW - (BW - W) / 2 + PAN; const bx = -(BW - W) / 2 + PAN;
     const ch = tm - envT;
     if (envFrom >= 0 && ch < 1.1 && !reduce) {                            // stage-up: the new floor drops in with a bounce
       const p = Math.min(1, ch / 1.1), off = (1 - p) * (1 - p) * -40 + Math.sin(p * Math.PI) * 4;
-      g.drawImage(place(envFrom), 0, 0, W, H);
-      g.globalAlpha = Math.min(1, p * 1.8); g.drawImage(place(env), 0, off, W, H); g.globalAlpha = 1;
-    } else { envFrom = -1; g.drawImage(place(env), 0, 0, W, H); }
+      g.drawImage(place(envFrom), bx, 0, BW, H);
+      g.globalAlpha = Math.min(1, p * 1.8); g.drawImage(place(env), bx, off, BW, H); g.globalAlpha = 1;
+    } else { envFrom = -1; g.drawImage(place(env), bx, 0, BW, H); }
     sync(tm);
     const speed = boostActive() ? 1.7 : 1, vis = visibleGens(), next = GENS.findIndex((_, i) => !S.owned[i]);
     const list = [];                                                      // painter's order: back to front
@@ -2445,26 +2477,27 @@ const Scene = (() => {
     boxes = [];
     const spots = [];                                                     // bubble positions, nudged up so they never overlap
     GENS.forEach((q, i) => { if ((shown[i] || (i === next && i < vis)) && !(!shown[i] && walkers.some(w => w.i === i))) { const [x, y] = zoneTopXY(i); spots.push({ i, x, y }); } });
+    spots.forEach(p => { const m = 62 * UZ(); p.x = Math.max(m, Math.min(W - m, p.x)); });   // names stay readable at the edges
     spots.sort((a, b2) => b2.y - a.y);
-    const bh = 19 * Math.max(.85, TH / 18), bw = 92 * Math.max(.85, TH / 18);
+    const bh = 36 * UZ(), bw = 96 * UZ();   // bubble + hire chip
     spots.forEach((p, k) => { for (let j = 0; j < k; j++) { const q = spots[j]; if (Math.abs(q.x - p.x) < bw && p.y > q.y - bh) p.y = q.y - bh; } });
     const spotOf = {}; spots.forEach(p => { spotOf[p.i] = p; });
     GENS.forEach((q, i) => {                                              // bubbles on top
       if (!spotOf[i]) return;
       const { x, y } = spotOf[i], pop = Math.max(0, 1 - (now - (focusI === i ? focusT : -9)) / .5);
-      const bb = bubble(i, x, y, S.owned[i], pop, !shown[i]);
+      const bb = bubble(i, x, y, S.owned[i], pop, !shown[i]), hc = hireChip(i, x, bb[3] + 1);
       const [u0, v0, du, dv] = ZONE[q.id], c1 = P(u0, v0 + dv), c2 = P(u0 + du, v0), c3 = P(u0 + du, v0 + dv);
-      boxes.push({ i, x0: Math.min(bb[0], c1[0]), y0: bb[1], x1: Math.max(bb[2], c2[0]), y1: c3[1], top: bb[1] });
+      boxes.push({ i, x0: Math.min(bb[0], c1[0], hc[0]), y0: bb[1], x1: Math.max(bb[2], c2[0], hc[2]), y1: Math.max(c3[1], hc[3]), top: bb[1] });
       rings.filter(r => r.i === i).forEach(r => { const p = (now - r.t0) / 1.2, [cx, cy] = P(u0 + du / 2, v0 + dv / 2);
         g.strokeStyle = `rgba(255,210,63,${1 - p})`; g.lineWidth = 3 * (1 - p) + .5; g.beginPath(); g.ellipse(cx, cy, (1 + p * 3) * TW * .5, (1 + p * 3) * TH * .5, 0, 0, 7); g.stroke();
-        g.globalAlpha = Math.max(0, 1 - p * p); g.font = `900 ${15 * Math.max(.9, TH / 18)}px Rubik,system-ui,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+        g.globalAlpha = Math.max(0, 1 - p * p); g.font = `900 ${15 * UZ()}px Rubik,system-ui,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
         g.lineWidth = 3.5; g.strokeStyle = INK; g.strokeText('×2!', x, y - 16 - p * 18); g.fillStyle = lin(g, 0, y - 40, 0, y, [[0, '#FFF3A0'], [1, '#FFB800']]); g.fillText('×2!', x, y - 16 - p * 18); g.globalAlpha = 1; });
     });
     const [cu, cv2] = [CEO[0] + 1.4, CEO[1] + .75], cp = P(cu, cv2);
     boxes.push({ i: FOUNDER, x0: cp[0] - TW * .9, y0: ceoTop - 4, x1: cp[0] + TW * .9, y1: cp[1] + TH * .8, top: ceoTop });
     if (boostActive()) {
       g.fillStyle = 'rgba(255,190,80,.08)'; g.fillRect(0, 0, W, H);
-      const z = Math.max(.9, TH / 18), pw = 38 * z, px = he() ? 10 : W - pw - 10, pulse = 1 + Math.sin(tm * 4) * .04;
+      const z = UZ(), pw = 38 * z, px = he() ? 10 : W - pw - 10, pulse = 1 + Math.sin(tm * 4) * .04;
       g.save(); g.translate(px + pw / 2, 20 * z); g.scale(pulse, pulse); g.translate(-px - pw / 2, -20 * z);
       rr(px, 10 * z, pw, 20 * z, 10 * z, lin(g, 0, 10 * z, 0, 30 * z, [[0, '#4BE38E'], [1, '#14A35A']]), INK, 1.5);
       g.fillStyle = 'rgba(255,255,255,.45)'; g.beginPath(); g.roundRect(px + 4 * z, 12 * z, pw - 8 * z, 6 * z, 3 * z); g.fill();
@@ -2474,7 +2507,7 @@ const Scene = (() => {
     }
     floats.forEach(f => {
       const p = (tm - f.t0) / 1.4;
-      if (f.code) { g.globalAlpha = Math.max(0, 1 - p * p); g.font = `900 ${12 * Math.max(.9, TH / 18)}px Rubik,system-ui,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+      if (f.code) { g.globalAlpha = Math.max(0, 1 - p * p); g.font = `900 ${12 * UZ()}px Rubik,system-ui,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
         g.lineWidth = 3; g.strokeStyle = INK; g.strokeText('</>', f.x, f.y - p * 22); g.fillStyle = '#FF8A3D'; g.fillText('</>', f.x, f.y - p * 22); g.globalAlpha = 1; }
       else coinText(f.x, f.y, f.txt, p);
     });
@@ -2495,25 +2528,25 @@ const Scene = (() => {
   document.addEventListener('visibilitychange', kick);
   window.addEventListener('resize', kick);
 
-  function focus(i) { focusI = i; focusT = now; }
-  function showCard(i) {                                                 // tap a zone: jump to its card and flash it
-    const el = document.querySelector(`#gens .gen[data-gen="${GENS[i].id}"]`);
-    focus(i);
-    if (!el) return;
-    try { el.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' }); } catch (_) { el.scrollIntoView(); }
-    el.style.setProperty('--flash', COL[GENS[i].id]);
-    el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
-    track('scene_station_tap', { gen: GENS[i].id });
-  }
-  cv.addEventListener('click', e => {
-    const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+  function focus(i) { focusI = i; focusT = now; if (W) lookAt(i); }
+  function tapAt(x, y) {
     const f = boxes.find(b => b.i === FOUNDER);
     if (f && x >= f.x0 && x <= f.x1 && y >= f.y0 && y <= f.y1) { $('tapBtn').click(); return; }
     for (let q = boxes.length - 1; q >= 0; q--) {
       const b = boxes[q]; if (b.i === FOUNDER) continue;
-      if (x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1) { showCard(b.i); return; }
+      if (x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1) { track('scene_hire_tap', { gen: GENS[b.i].id }); buy(b.i); return; }   // tap a team: hire
     }
+  }
+  const at = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  cv.addEventListener('pointerdown', e => { const [x, y] = at(e); down = { x, y, pan: PAN, moved: false, id: e.pointerId }; });
+  cv.addEventListener('pointermove', e => {
+    if (!down || e.pointerId !== down.id) return;
+    const [x] = at(e), dx = x - down.x;
+    if (!down.moved && Math.abs(dx) > 7) { down.moved = true; PT = null; try { cv.setPointerCapture(e.pointerId); } catch (_) {} }
+    if (down.moved) { PAN = Math.max(-panMax(), Math.min(panMax(), down.pan + dx)); kick(); }
   });
+  cv.addEventListener('pointerup', e => { if (down && !down.moved) { const [x, y] = at(e); tapAt(x, y); } down = null; });
+  cv.addEventListener('pointercancel', () => { down = null; });
   $('tapBtn').addEventListener('click', () => {                          // the founder codes faster on each tap
     tapUntil = now + .35; tapT = now;
     const b = boxes.find(q => q.i === FOUNDER);
