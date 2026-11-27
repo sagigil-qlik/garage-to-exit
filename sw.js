@@ -1,6 +1,6 @@
 // Offline support: the game shell is cached on first visit.
 // Bump CACHE when releasing a new version so players get the update.
-const CACHE = 'g2e-v0.13';
+const CACHE = 'g2e-v0.14';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png',
                 './icon-maskable-512.png', './apple-touch-icon.png'];
 
