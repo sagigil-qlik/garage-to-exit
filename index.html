@@ -277,6 +277,25 @@
   .scene{display:block;width:100%;height:auto;aspect-ratio:1.42/1;border-radius:0;background:#1F4FC9;touch-action:pan-y;box-shadow:0 5px 0 #2A1F7A,0 12px 26px rgba(40,20,120,.28);cursor:pointer}
   .office{border-radius:22px;overflow:hidden;background:#fff;box-shadow:0 5px 0 #2A1F7A,0 12px 26px rgba(40,20,120,.28)}
   .office .scene{box-shadow:none!important}
+  .office{position:relative}
+  .fullbtn{position:absolute;top:10px;inset-inline-start:10px;width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.92);color:#1F3FA8;display:grid;place-items:center;font-size:22px;box-shadow:0 3px 0 rgba(10,20,80,.35);z-index:2}
+  .fullhud,.fullhint{display:none}
+  /* Full-screen office: the office fills the screen as a wide view. On a phone held upright the view is turned
+     sideways (turn the phone to look at it); when the screen is already wide it is shown as is. */
+  body.fullmode{overflow:hidden}
+  .office.full{position:fixed;z-index:30;border-radius:0;top:50%;left:50%;width:100vh;height:100vw;transform:translate(-50%,-50%) rotate(90deg);box-shadow:none}
+  @media (orientation:landscape){.office.full{width:100vw;height:100vh;transform:translate(-50%,-50%)}}
+  .office.full .scene{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;touch-action:none}
+  .office.full .fullbtn{display:none}
+  body.fullmode #tipbox,body.fullmode #toasts{display:none}   /* they are not turned with the full view */
+  .office.full .teambar{position:absolute;bottom:12px;inset-inline-end:12px;width:min(340px,48%);border-radius:18px;background:#fff;box-shadow:0 4px 0 rgba(10,20,80,.35),0 10px 24px rgba(10,20,80,.3);z-index:2}
+  .office.full .fullhud{display:flex;align-items:center;gap:10px;position:absolute;top:10px;inset-inline-end:12px;background:rgba(20,16,70,.72);color:#fff;border-radius:999px;padding:5px 6px 5px 14px;font-variant-numeric:tabular-nums;z-index:2}
+  [dir="rtl"] .office.full .fullhud{padding:5px 14px 5px 6px}
+  .fullhud b{font-size:20px;font-weight:900}
+  .fullhud span{font-size:13px;font-weight:700;color:#C9F7DD}
+  .fullhud button{width:36px;height:36px;border-radius:50%;background:#fff;color:#1A1446;font-size:18px;font-weight:900}
+  .office.full .fullhint.show{display:flex;flex-direction:column;align-items:center;gap:8px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(20,16,70,.8);color:#fff;border-radius:18px;padding:14px 18px;font-weight:800;z-index:3;pointer-events:none}
+  .fullhint svg{font-size:40px}
   .teambar{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:8px 10px}
   .teambar .ico svg{width:44px;height:44px;display:block}
   .teambar .tbt{min-width:0}
@@ -395,8 +414,11 @@
     <div class="bar"><div id="stageBar"></div></div>
   </header>
 
-  <div class="office">
+  <div class="office" id="office">
     <canvas id="scene" class="scene" role="img" data-i18n-aria="sceneAria"></canvas>
+    <button class="fullbtn" id="fullBtn" data-i18n-aria="fullOpen"><svg viewBox="0 0 24 24" class="ic"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <div class="fullhud"><b id="fhCash"></b><span id="fhInc"></span><button id="fullClose" data-i18n-aria="fullClose">✕</button></div>
+    <div class="fullhint" id="fullHint"><svg viewBox="0 0 24 24" class="ic"><rect x="7" y="3" width="10" height="18" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3 12a9 9 0 0 1 4-7.5M21 12a9 9 0 0 1-4 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span data-i18n="fullHint"></span></div>
     <div class="teambar" id="teamBar">
       <div class="ico" id="tbIco"></div>
       <div class="tbt"><b><span id="tbName"></span> <button class="ib" data-info="team" data-i18n-aria="infoAria">i</button></b><small id="tbInfo"></small></div>
@@ -778,7 +800,7 @@ const STR = {
     exitLocked:'Sell company', exitGain:'Sell company {n}', exitAria:'Sell the company',
     helpAria:'Terms and how to play', infoAria:'Explanation', stagesAria:'All company stages',
     hintTap:'Tap "Write code" to earn money.', hintHire:'You have enough money: tap "Hire" under the office to hire your first Intern!',
-    xpLbl:'Experience points:', xpBonus:'(income bonus {p})', version:'v0.18', langBtn:'עברית',
+    xpLbl:'Experience points:', xpBonus:'(income bonus {p})', version:'v1.0', langBtn:'עברית',
     adLoading:'Loading the ad…', adCancelled:'The ad was closed before the end, so there is no reward this time.',
     adFailed:'No ad is available right now. Try again in a minute.', adNotReady:'Ads are still loading. Try again in a few seconds.',
     adNoConsent:'Ads are off because of your privacy choices. You can change them under "Privacy".',
@@ -792,7 +814,7 @@ const STR = {
     dailyTitle:'Daily bonus', dailyDay:'Day {d}', dailyText:'Come back every day: the bonus grows each day of your streak.',
     dailyStreak:'{n} days in a row! Keep the streak going.', dailyBroken:'You missed a day, so the streak starts again from day 1.',
     dailyBig:'Big bonus', dailyBoost:'+ double income for 30 minutes', toastDaily:'Daily bonus: {v}',
-    sceneAria:'Your company office', piggyTitle:'Piggy bank', piggyFillIn:'Full in {t}', piggyFull:'Full! Tap to collect',
+    sceneAria:'Your company office', fullOpen:'Full-screen office', fullClose:'Close the full-screen office', fullHint:'Turn your phone sideways', piggyTitle:'Piggy bank', piggyFillIn:'Full in {t}', piggyFull:'Full! Tap to collect',
     piggyText:'The piggy bank fills with 20% of your income, even while you are away. After 5 minutes it is full and stops filling until you collect it.',
     piggyTextFull:'Your piggy bank is full and has stopped filling. Collect it so it starts filling again.',
     piggyLater:'Later', toastPiggy:'Collected {v} from the piggy bank!', kvPiggy:'Piggy bank (collected now)',
@@ -860,7 +882,7 @@ const STR = {
     exitLocked:'מכור חברה', exitGain:'מכור חברה {n}', exitAria:'מכירת החברה',
     helpAria:'מונחים והסבר', infoAria:'הסבר', stagesAria:'כל שלבי החברה',
     hintTap:'לחץ על "כתוב קוד" כדי להרוויח כסף.', hintHire:'יש לך מספיק כסף: לחץ על "גייס" מתחת למשרד כדי לגייס את המתמחה הראשון!',
-    xpLbl:'נקודות ניסיון:', xpBonus:'(בונוס הכנסה {p})', version:'גרסה 0.18', langBtn:'English',
+    xpLbl:'נקודות ניסיון:', xpBonus:'(בונוס הכנסה {p})', version:'גרסה 1.0', langBtn:'English',
     adLoading:'טוען פרסומת…', adCancelled:'הפרסומת נסגרה לפני הסוף, ולכן הפעם אין פרס.',
     adFailed:'אין כרגע פרסומת זמינה. נסה שוב בעוד דקה.', adNotReady:'הפרסומות עוד נטענות. נסה שוב בעוד כמה שניות.',
     adNoConsent:'הפרסומות כבויות לפי בחירות הפרטיות שלך. אפשר לשנות אותן ב"פרטיות".',
@@ -874,7 +896,7 @@ const STR = {
     dailyTitle:'בונוס יומי', dailyDay:'יום {d}', dailyText:'כדאי לחזור כל יום: הבונוס גדל בכל יום ברצף.',
     dailyStreak:'{n} ימים ברצף! תמשיך כך.', dailyBroken:'פספסת יום, ולכן הרצף מתחיל שוב מיום 1.',
     dailyBig:'בונוס גדול', dailyBoost:'+ הכנסה כפולה ל-30 דקות', toastDaily:'בונוס יומי: {v}',
-    sceneAria:'המשרד של החברה שלך', piggyTitle:'קופת חיסכון', piggyFillIn:'מלאה בעוד {t}', piggyFull:'מלאה! לחץ לאיסוף',
+    sceneAria:'המשרד של החברה שלך', fullOpen:'משרד במסך מלא', fullClose:'סגור את המשרד במסך מלא', fullHint:'סובב את הטלפון לרוחב', piggyTitle:'קופת חיסכון', piggyFillIn:'מלאה בעוד {t}', piggyFull:'מלאה! לחץ לאיסוף',
     piggyText:'הקופה מתמלאת ב-20% מההכנסה שלך, גם כשאתה לא במשחק. אחרי 5 דקות היא מלאה ומפסיקה להתמלא עד שתאסוף אותה.',
     piggyTextFull:'הקופה מלאה ולא מתמלאת יותר. אסוף אותה כדי שתתחיל להתמלא שוב.',
     piggyLater:'אחר כך', toastPiggy:'אספת {v} מהקופה!', kvPiggy:'קופת החיסכון (נאספת עכשיו)',
@@ -1282,6 +1304,10 @@ function render(force) {
   if (force || visibleGens() !== shownCount) buildCards();
   const inc = income(), val = valuation(), b2 = boostActive() ? 2 : 1;
   $('cash').textContent = money(S.cash);
+  if (typeof Scene !== 'undefined' && Scene.isFull()) {
+    $('fhCash').textContent = money(S.cash); $('fhInc').textContent = t('incomeLine', { v: money(inc, true) });
+    if (document.querySelector('.modal.show')) Scene.full(false);
+  }
   $('income').textContent = t('incomeLine', { v: money(inc, true) });
   if (b2 === 2) { const x = document.createElement('span'); x.className = 'x2'; x.textContent = t('doubleBadge'); $('income').appendChild(x); }
   $('valuation').textContent = money(val);
@@ -2122,9 +2148,9 @@ const Scene = (() => {
     if (x > W * .22 && x < W * .78) return;
     PT = Math.max(-panMax(), Math.min(panMax(), W / 2 - x0));
   }
+  const turned = () => document.body.classList.contains('fullmode') && innerHeight > innerWidth;   // full view shown sideways
   function resize() {
-    const r = cv.getBoundingClientRect();
-    const w = Math.round(r.width), h = Math.round(r.height), d = Math.min(2, window.devicePixelRatio || 1);
+    const w = Math.round(cv.clientWidth), h = Math.round(cv.clientHeight), d = Math.min(2, window.devicePixelRatio || 1);   // layout size (not affected by the rotation)
     if (!w || (w === W && h === H && d === dpr)) return;
     W = w; H = h; dpr = d; cv.width = w * d; cv.height = h * d; bg = {};
     // fit the floor and its walls to the height (big and readable); if it is wider than the screen, it can be dragged
@@ -2537,7 +2563,7 @@ const Scene = (() => {
       const { x, y } = spotOf[i], pop = Math.max(0, 1 - (now - (focusI === i ? focusT : -9)) / .5);
       const on = i === sel, bb = on ? bubble(i, x, y, S.owned[i], pop, !shown[i]) : badge(i, x, y, !shown[i], false);
       const [u0, v0, du, dv] = ZONE[q.id], c1 = P(u0, v0 + dv), c2 = P(u0 + du, v0), c3 = P(u0 + du, v0 + dv);
-      boxes.push({ i, x0: Math.min(bb[0], c1[0]), y0: bb[1], x1: Math.max(bb[2], c2[0]), y1: Math.max(c3[1], bb[3]), top: bb[1] });
+      boxes.push({ i, x0: bb[0] - 4, y0: bb[1] - 4, x1: bb[2] + 4, y1: bb[3] + 4, top: bb[1] });   // the badge; the floor area is found by position (zoneAt)
       rings.filter(r => r.i === i).forEach(r => { const p = (now - r.t0) / 1.2, [cx, cy] = P(u0 + du / 2, v0 + dv / 2);
         g.strokeStyle = `rgba(255,210,63,${1 - p})`; g.lineWidth = 3 * (1 - p) + .5; g.beginPath(); g.ellipse(cx, cy, (1 + p * 3) * TW * .5, (1 + p * 3) * TH * .5, 0, 0, 7); g.stroke();
         g.globalAlpha = Math.max(0, 1 - p * p); g.font = `900 ${15 * UZ()}px Rubik,system-ui,sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
@@ -2579,19 +2605,31 @@ const Scene = (() => {
   window.addEventListener('resize', kick);
 
   function focus(i) { focusI = i; focusT = now; if (W) lookAt(i); }
+  // Which team's floor area is under a screen point? Undo the isometric projection to floor tiles (u, v).
+  // People and desks stand up from the floor, so a tap on a body also counts for the floor a little below it.
+  function zoneAt(x, y) {
+    const vis = visibleGens(), next = GENS.findIndex((_, i) => !S.owned[i]);
+    for (const dy of [0, 10 * TH / 18, 22 * TH / 18]) {
+      const a = (x - OX) / (TW / 2), b2 = (y + dy - OY) / (TH / 2), u = (a + b2) / 2, v = (b2 - a) / 2;
+      const i = GENS.findIndex((q, k) => { const [u0, v0, du, dv] = ZONE[q.id];
+        return (shown[k] || (k === next && k < vis)) && u >= u0 && u <= u0 + du && v >= v0 && v <= v0 + dv; });
+      if (i >= 0) return i;
+    }
+    return -1;
+  }
   function tapAt(x, y) {
     const f = boxes.find(b => b.i === FOUNDER);
-    if (f && x >= f.x0 && x <= f.x1 && y >= f.y0 && y <= f.y1) { $('tapBtn').click(); return; }
-    for (let q = boxes.length - 1; q >= 0; q--) {
-      const b = boxes[q]; if (b.i === FOUNDER) continue;
-      if (x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1) {
-        if (b.i === sel) { track('scene_hire_tap', { gen: GENS[b.i].id }); buy(b.i); }   // tap the selected team again: hire
-        else { sel = b.i; focus(b.i); track('scene_select', { gen: GENS[b.i].id }); render(true); }
-        return;
-      }
-    }
+    let i = -1;
+    for (let q = boxes.length - 1; q >= 0 && i < 0; q--) { const b = boxes[q];                // a badge first (exact, on top)
+      if (b.i !== FOUNDER && x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1) i = b.i; }
+    if (i < 0 && f && x >= f.x0 && x <= f.x1 && y >= f.y0 && y <= f.y1) { $('tapBtn').click(); return; }
+    if (i < 0) i = zoneAt(x, y);
+    if (i < 0) return;
+    if (i === sel) { track('scene_hire_tap', { gen: GENS[i].id }); buy(i); }                   // tap the selected team again: hire
+    else { sel = i; focus(i); track('scene_select', { gen: GENS[i].id }); render(true); }
   }
-  const at = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  const at = e => { const r = cv.getBoundingClientRect();                 // screen point -> point on the office drawing
+    return turned() ? [e.clientY - r.top, r.right - e.clientX] : [e.clientX - r.left, e.clientY - r.top]; };
   cv.addEventListener('pointerdown', e => { const [x, y] = at(e); down = { x, y, pan: PAN, moved: false, id: e.pointerId }; });
   cv.addEventListener('pointermove', e => {
     if (!down || e.pointerId !== down.id) return;
@@ -2607,8 +2645,19 @@ const Scene = (() => {
     if (b && floats.length < 6) floats.push({ x: (b.x0 + b.x1) / 2 + (Math.random() - .5) * 14, y: b.top - 4, t0: now, code: 1 });
     if (b && floats.length < 7) floats.push({ x: (b.x0 + b.x1) / 2 + 22, y: b.top + 6, t0: now, txt: '+' + plain(money(tapValue(), true)) });   // the money from the tap, in the office
   });
+  function setFull(on) {
+    const was = document.body.classList.contains('fullmode');
+    if (on === was) return;
+    document.body.classList.toggle('fullmode', on); $('office').classList.toggle('full', on);
+    W = 0; resize(); kick();
+    if (on) { track('office_full_open', { sideways: turned() });
+      if (turned()) { const h = $('fullHint'); h.classList.add('show'); clearTimeout(h._t); h._t = setTimeout(() => h.classList.remove('show'), 2200); } }
+  }
+  $('fullBtn').addEventListener('click', () => setFull(true));
+  $('fullClose').addEventListener('click', () => setFull(false));
+  window.addEventListener('resize', () => { if (document.body.classList.contains('fullmode')) { W = 0; resize(); } });
   kick();
-  return { kick, focus, sel: () => sel, select: i => { sel = i; }, draw: () => draw(performance.now() / 1000),
+  return { kick, focus, full: on => setFull(on), isFull: () => document.body.classList.contains('fullmode'), sel: () => sel, select: i => { sel = i; }, draw: () => draw(performance.now() / 1000),
     hit: id => { const i = id === 'founder' ? FOUNDER : GENS.findIndex(q => q.id === id), b = boxes.find(q => q.i === i);
       if (!b) return null; if (i === FOUNDER) { const cp = P(CEO[0] + 1.4, CEO[1] + .75); return { x: cp[0], y: cp[1] - 8 }; } return { x: (b.x0 + b.x1) / 2, y: b.y0 + 4 }; },
     state: () => { const gb = boxes.find(b => b.i !== FOUNDER && !shown[b.i]);
@@ -2676,6 +2725,7 @@ window.__g2eHooks = {
   // Android back button: close the top window. Returns true when something was closed.
   onBack() {
     if ($('adLoading').classList.contains('show') || $('ad').classList.contains('show')) return true;
+    if (typeof Scene !== 'undefined' && Scene.isFull()) { Scene.full(false); return true; }
     for (const id of MODAL_ORDER) {
       if (!$(id).classList.contains('show')) continue;
       if (id === 'dailyModal') claimDaily(1);
