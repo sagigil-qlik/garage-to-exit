@@ -87,6 +87,8 @@
   .income{display:inline-flex;align-items:center;gap:6px;margin-top:6px;background:rgba(255,255,255,.16);border-radius:999px;padding:3px 10px;color:#E6FFF4;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
   .income .x2{background:#FFD452;color:#4A2600;border-radius:999px;padding:0 8px;font-size:12px;font-weight:800}
   .val{color:#fff;font-size:12px;margin-top:3px}
+  .incrow{display:flex;align-items:center;gap:6px}
+  .val .ib{width:18px;height:18px;line-height:18px;font-size:11px}
   .lbl .runclock{margin:0;margin-inline-start:auto;font-size:12px}
   .runclock{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.16);border-radius:999px;padding:2px 10px 2px 8px;font-weight:700;font-variant-numeric:tabular-nums}
   .runclock svg.ic{font-size:14px}
@@ -384,9 +386,9 @@
     <div class="lbl"><span data-i18n="cashLbl"></span><button class="ib" data-info="numbers" data-i18n-aria="infoAria">i</button>
       <div class="val runclock" id="runClock"><svg class="ic"><use href="#i-clock"/></svg><span data-i18n="runTime"></span><b id="runClockT"></b></div></div>
     <div class="cash" id="cash">$0</div>
-    <div class="income" id="income"></div>
+    <div class="incrow"><div class="income" id="income"></div><button class="ib" data-info="income" data-i18n-aria="infoAria">i</button></div>
     <div class="vrow">
-      <div class="vtxt"><div class="val"><span data-i18n="valueLbl"></span> <b id="valuation">$0</b></div>
+      <div class="vtxt"><div class="val"><span data-i18n="valueLbl"></span> <b id="valuation">$0</b> <button class="ib" data-info="value" data-i18n-aria="infoAria">i</button></div>
       <div class="val" id="nextStage"></div></div>
       <button id="exitBtn" class="exit" data-i18n-aria="exitAria"></button>
     </div>
@@ -397,7 +399,7 @@
     <canvas id="scene" class="scene" role="img" data-i18n-aria="sceneAria"></canvas>
     <div class="teambar" id="teamBar">
       <div class="ico" id="tbIco"></div>
-      <div class="tbt"><b id="tbName"></b><small id="tbInfo"></small></div>
+      <div class="tbt"><b><span id="tbName"></span> <button class="ib" data-info="team" data-i18n-aria="infoAria">i</button></b><small id="tbInfo"></small></div>
       <button class="buy" id="tbBuy"><span class="bn"></span><span class="bc"></span></button>
     </div>
   </div>
@@ -479,6 +481,7 @@
   <p id="exitText"></p>
   <div class="kv" id="exitKv"></div>
   <p style="color:var(--muted);font-size:12px" data-i18n="exitNote"></p>
+  <button class="linkbtn" id="exitXpHow" data-i18n="xpHow"></button>
   <div class="btns">
     <button class="b-sec" id="exitCancel" data-i18n="exitCancel"></button>
     <button class="b-gold" id="exitConfirm" data-i18n="exitConfirm"></button>
@@ -705,17 +708,17 @@ const STAGE_DESC = {
 const TERMS = {
   en: {
     tap:['💻','Write code','Each tap earns money right away. A tap is worth more as your income grows.'],
-    hire:['👥','Hiring','Every employee earns money every second, even while you are not playing. New kinds of employees unlock as the company earns more.'],
-    cash:['💵','Cash','The money you have right now. You spend it on hiring.'],
-    income:['⏱️','Income per second','How much money your team earns every second, automatically.'],
+    hire:['👥','Hiring','Every employee earns a fixed amount every second, even while you are not playing. Each team card (and the bar under the office) shows how much one employee earns and how much the whole team earns. New kinds of employees unlock as the company earns more.'],
+    cash:['💵','Cash','The money you have right now. It grows by itself every second (your income), and with every tap on "Write code". You spend it on hiring.'],
+    income:['⏱️','Income per second','How much your whole team earns every second, automatically: all your employees together. When double income is on, it shows "doubled" and the number already includes it.'],
     cost:['💲','Hiring price','Each hire makes the next one of the same kind 15% more expensive.'],
     bonus:['⭐','Quantity bonus','When you have 10, 25, 50, 100 and so on of the same kind, their income doubles. The yellow bar on each card shows how many are left.'],
-    value:['🏷️','Company value','What the company is worth: income per second × 10,000. The value decides the company stage.'],
+    value:['🏷️','Company value','What buyers would pay for your company: income per second × 10,000. For example, $100 per second = $1M value. The value decides the company stage and, when you sell, the competition points.'],
     stage:['📈','Company stage','From the Garage to the stock market. The bar at the top shows how close the next stage is. Tap the stage badge to see all stages.'],
-    double:['📺','Double income','Watch a short ad to double your income for 30 minutes. You can stack up to 4 hours.'],
+    double:['📺','Double income','Watch a short ad (up to 30 seconds) and all your income is doubled for 30 minutes. Each extra ad adds another 30 minutes, up to 4 hours. It is optional: the game works without ads.'],
     offline:['🌙','Earnings while away','When you are not playing, your team keeps earning for up to 8 hours. When you come back you can collect, or watch an ad to get 2 times more.'],
     sell:['🏁','Selling the company','You can sell the company as soon as you have a new experience point to collect, usually already at the "First Funding Round" stage. You start a new company from zero and get experience points and competition points. Best time: when the button pulses.'],
-    xp:['🎓','Experience points','They come from all the money you have ever earned, and you collect them when you sell a company: each sale gives the points added since the previous sale. Each new point needs more money than the one before. Each point increases income by 10%, forever.'],
+    xp:['🎓','Experience points','Points that are never lost. Each point adds 10% to all your income, forever (10 points = double income). You collect them when you sell a company, based on all the money you have ever earned; each new point needs more money than the one before.'],
     compete:['🏆','Weekly competition','Everyone competes on one global leaderboard. A week runs from Sunday 00:00 to Saturday night, Israel time. Then the winner is announced and a new week starts.'],
     points:['🎯','Points per sale','Every company you sell earns points by its sale value: $1M = 10, $10M = 20, $1B = 40. Every 10 times more value adds 10 points.'],
     speed:['⚡','Speed bonus','A company built in under an hour earns up to 50% more points. The faster you built it, the bigger the bonus.'],
@@ -723,17 +726,17 @@ const TERMS = {
   },
   he: {
     tap:['💻','כתוב קוד','כל לחיצה מכניסה כסף מיד. לחיצה שווה יותר ככל שההכנסה שלך גדלה.'],
-    hire:['👥','גיוס עובדים','כל עובד מכניס כסף בכל שנייה, גם כשאתה לא במשחק. סוגי עובדים חדשים נפתחים ככל שהחברה מרוויחה.'],
-    cash:['💵','כסף בקופה','הכסף שיש לך עכשיו. משתמשים בו כדי לגייס עובדים.'],
-    income:['⏱️','הכנסה לשנייה','כמה כסף הצוות שלך מרוויח בכל שנייה, באופן אוטומטי.'],
+    hire:['👥','גיוס עובדים','כל עובד מכניס סכום קבוע בכל שנייה, גם כשאתה לא במשחק. בכל כרטיס צוות (ובפס מתחת למשרד) רואים כמה מכניס עובד אחד וכמה מכניס כל הצוות. סוגי עובדים חדשים נפתחים ככל שהחברה מרוויחה.'],
+    cash:['💵','כסף בקופה','הכסף שיש לך עכשיו. הוא גדל לבד בכל שנייה (לפי ההכנסה), ובכל לחיצה על "כתוב קוד". משתמשים בו כדי לגייס עובדים.'],
+    income:['⏱️','הכנסה לשנייה','כמה כסף כל הצוות מרוויח בכל שנייה, אוטומטית: כל העובדים ביחד. כשההכנסה הכפולה פעילה כתוב "כפולה", והמספר כבר כולל אותה.'],
     cost:['💲','מחיר גיוס','כל גיוס מייקר ב-15% את הגיוס הבא מאותו סוג.'],
     bonus:['⭐','בונוס כמות','כשיש לך 10, 25, 50, 100 וכן הלאה מאותו סוג, ההכנסה מהם מוכפלת. הפס הצהוב בכל כרטיס מראה כמה נשאר.'],
-    value:['🏷️','שווי החברה','כמה החברה שווה: ההכנסה לשנייה כפול 10,000. השווי קובע את שלב החברה.'],
+    value:['🏷️','שווי החברה','כמה קונים היו משלמים על החברה שלך: ההכנסה לשנייה כפול 10,000. למשל הכנסה של $100 לשנייה = שווי של $1M. השווי קובע את שלב החברה, וכשמוכרים, גם את הנקודות לתחרות.'],
     stage:['📈','שלב החברה','מהמוסך ועד הבורסה. הפס למעלה מראה כמה נשאר לשלב הבא. לחץ על תג השלב כדי לראות את כל השלבים.'],
-    double:['📺','הכנסה כפולה','צפה בפרסומת קצרה וההכנסה שלך תוכפל ל-30 דקות. אפשר לצבור עד 4 שעות.'],
+    double:['📺','הכנסה כפולה','צפה בפרסומת קצרה (עד 30 שניות) וכל ההכנסה שלך תוכפל ל-30 דקות. כל פרסומת נוספת מוסיפה עוד 30 דקות, עד 4 שעות. זה לא חובה: המשחק עובד גם בלי פרסומות.'],
     offline:['🌙','רווח בזמן שלא היית','כשאתה לא במשחק, הצוות ממשיך להרוויח עד 8 שעות. כשתחזור תוכל לאסוף, או לצפות בפרסומת ולקבל פי 2.'],
     sell:['🏁','מכירת החברה','אפשר למכור את החברה ברגע שיש לך נקודת ניסיון חדשה לאסוף, בדרך כלל כבר בשלב "גיוס ראשון". מתחילים חברה חדשה מאפס, ומקבלים נקודות ניסיון ונקודות לתחרות. הזמן הכי טוב: כשהכפתור מהבהב.'],
-    xp:['🎓','נקודות ניסיון','הן מחושבות לפי כל הכסף שהרווחת אי פעם, ואוספים אותן כשמוכרים חברה: כל מכירה נותנת את הנקודות שנוספו מאז המכירה הקודמת. כל נקודה חדשה דורשת יותר כסף מהקודמת. כל נקודה מגדילה את ההכנסה ב-10%, לתמיד.'],
+    xp:['🎓','נקודות ניסיון','נקודות שלא נמחקות לעולם. כל נקודה מוסיפה 10% לכל ההכנסה, לתמיד (10 נקודות = הכנסה כפולה). מקבלים אותן כשמוכרים חברה, לפי כל הכסף שהרווחת אי פעם. כל נקודה חדשה דורשת יותר כסף מהקודמת.'],
     compete:['🏆','תחרות שבועית','כל השחקנים מתחרים בלוח תוצאות עולמי אחד. שבוע מתחיל ביום ראשון בחצות ונגמר במוצאי שבת, לפי שעון ישראל. אז מוכרז המנצח ומתחיל שבוע חדש.'],
     points:['🎯','נקודות על מכירה','כל חברה שמכרת מזכה בנקודות לפי סכום המכירה: מכירה ב-$1M שווה 10 נקודות, ב-$10M שווה 20, וב-$1B שווה 40. כל הכפלה פי 10 בשווי מוסיפה 10 נקודות.'],
     speed:['⚡','בונוס מהירות','חברה שנבנתה בפחות משעה מקבלת עד 50% נקודות נוספות. ככל שבנית אותה מהר יותר, הבונוס גדול יותר.'],
@@ -751,6 +754,8 @@ const TERM_GROUPS = {
   all: ['tap','hire','cash','income','cost','bonus','value','stage','double','offline','sell','xp','compete'],
   compete: ['compete','points','speed','weekScore'],
   numbers: ['cash','income','value','stage'],
+  value: ['value','stage','sell','xp'],
+  income: ['income','double','offline'],
   team: ['hire','cost','bonus'],
   xp: ['sell','xp'],
 };
@@ -767,13 +772,13 @@ const STR = {
     cashLbl:'Cash', incomeLine:'Income: {v} per second', doubleBadge:'doubled',
     runTime:'Company time:', valueLbl:'Company value:', nextStage:'Next stage: {name}, at {v} value', topStage:'You reached the top stage',
     teamTitle:'Your team', modesLbl:'Hire per tap:', modeMax:'Max',
-    owned:'You have {n}', cardRate:'Earning {v} per second', cardRateEach:'Each one earns {v} per second',
+    owned:'You have {n}', perOne:'{v} each', cardRate:'Earning {v} per second', cardRateEach:'Each one earns {v} per second',
     cardBonus:'{n} more to double their income', cardAll:'All quantity bonuses reached',
     hireN:'Hire {n}', hireAria:'Hire {name}', lockedName:'Coming soon', lockedDesc:'Unlocks when this company has earned {v}',
     exitLocked:'Sell company', exitGain:'Sell company {n}', exitAria:'Sell the company',
     helpAria:'Terms and how to play', infoAria:'Explanation', stagesAria:'All company stages',
     hintTap:'Tap "Write code" to earn money.', hintHire:'You have enough money: tap "Hire" under the office to hire your first Intern!',
-    xpLbl:'Experience points:', xpBonus:'(income bonus {p})', version:'v0.17', langBtn:'עברית',
+    xpLbl:'Experience points:', xpBonus:'(income bonus {p})', version:'v0.18', langBtn:'עברית',
     adLoading:'Loading the ad…', adCancelled:'The ad was closed before the end, so there is no reward this time.',
     adFailed:'No ad is available right now. Try again in a minute.', adNotReady:'Ads are still loading. Try again in a few seconds.',
     adNoConsent:'Ads are off because of your privacy choices. You can change them under "Privacy".',
@@ -825,6 +830,7 @@ const STR = {
     exitCancel:'Not yet', exitConfirm:'Sell and start over',
     stagesTitle:'Company stages', stagesIntro:'Your stage depends on company value (income per second × 10,000).', stageFrom:'from {v}',
     helpTitle:'Terms and how to play', helpClose:'Got it',
+    infoValueTitle:'Company value and selling', infoIncomeTitle:'Income', xpHow:'What are experience points?',
     infoNumbersTitle:'What the numbers mean', infoTeamTitle:'How hiring works', infoXpTitle:'Selling and experience',
     introText:'You have a laptop, a garage and an idea. Hire a team, grow your income, become a billion-dollar company and sell it. Then start a new company, stronger.',
     introLang:'Language', introStart:'Let’s start', introHelp:'Explain the game',
@@ -848,13 +854,13 @@ const STR = {
     cashLbl:'כסף בקופה', incomeLine:'הכנסה: {v} לשנייה', doubleBadge:'כפולה',
     runTime:'זמן החברה:', valueLbl:'שווי החברה:', nextStage:'השלב הבא: {name}, בשווי {v}', topStage:'הגעת לשלב הגבוה ביותר',
     teamTitle:'הצוות שלך', modesLbl:'כמה לגייס בכל לחיצה:', modeMax:'הכי הרבה',
-    owned:'יש לך {n}', cardRate:'מכניסים {v} לשנייה', cardRateEach:'כל אחד מכניס {v} לשנייה',
+    owned:'יש לך {n}', perOne:'{v} כל אחד', cardRate:'מכניסים {v} לשנייה', cardRateEach:'כל אחד מכניס {v} לשנייה',
     cardBonus:'עוד {n} עד הכפלת ההכנסה מהם', cardAll:'כל בונוסי הכמות הושגו',
     hireN:'גייס {n}', hireAria:'גייס {name}', lockedName:'בקרוב', lockedDesc:'ייפתח כשהחברה הנוכחית תרוויח {v}',
     exitLocked:'מכור חברה', exitGain:'מכור חברה {n}', exitAria:'מכירת החברה',
     helpAria:'מונחים והסבר', infoAria:'הסבר', stagesAria:'כל שלבי החברה',
     hintTap:'לחץ על "כתוב קוד" כדי להרוויח כסף.', hintHire:'יש לך מספיק כסף: לחץ על "גייס" מתחת למשרד כדי לגייס את המתמחה הראשון!',
-    xpLbl:'נקודות ניסיון:', xpBonus:'(בונוס הכנסה {p})', version:'גרסה 0.17', langBtn:'English',
+    xpLbl:'נקודות ניסיון:', xpBonus:'(בונוס הכנסה {p})', version:'גרסה 0.18', langBtn:'English',
     adLoading:'טוען פרסומת…', adCancelled:'הפרסומת נסגרה לפני הסוף, ולכן הפעם אין פרס.',
     adFailed:'אין כרגע פרסומת זמינה. נסה שוב בעוד דקה.', adNotReady:'הפרסומות עוד נטענות. נסה שוב בעוד כמה שניות.',
     adNoConsent:'הפרסומות כבויות לפי בחירות הפרטיות שלך. אפשר לשנות אותן ב"פרטיות".',
@@ -906,6 +912,7 @@ const STR = {
     exitCancel:'עוד לא', exitConfirm:'מכור והתחל מחדש',
     stagesTitle:'שלבי החברה', stagesIntro:'השלב נקבע לפי שווי החברה (ההכנסה לשנייה כפול 10,000).', stageFrom:'מ-{v}',
     helpTitle:'מונחים והסבר', helpClose:'הבנתי',
+    infoValueTitle:'שווי החברה ומכירה', infoIncomeTitle:'הכנסה', xpHow:'מה זה נקודות ניסיון?',
     infoNumbersTitle:'מה המספרים אומרים', infoTeamTitle:'איך עובד הגיוס', infoXpTitle:'מכירה ונקודות ניסיון',
     introText:'יש לך מחשב נייד, מוסך ורעיון. גייס צוות, הגדל את ההכנסה, הפוך לחברת מיליארד ומכור אותה. אחר כך תתחיל חברה חדשה, חזקה יותר.',
     introLang:'שפה', introStart:'יאללה, מתחילים', introHelp:'הסבר על המשחק',
@@ -1317,7 +1324,9 @@ function render(force) {
     const i = Scene.sel(), id = GENS[i].id, n = buyCount(i), cost = costN(i, n), tb = $('tbBuy');
     if ($('tbIco').dataset.id !== id) { $('tbIco').innerHTML = svgIcon('g-' + id); $('tbIco').dataset.id = id; tb.setAttribute('aria-label', t('hireAria', { name: genName(i) })); }
     $('tbName').textContent = genName(i);
-    $('tbInfo').textContent = S.owned[i] ? t('owned', { n: S.owned[i] }) + ' · ' + t('cardRate', { v: money(genIncome(i) * b2, true) }) : genDesc(i);
+    $('tbInfo').textContent = S.owned[i]
+      ? t('owned', { n: S.owned[i] }) + ' · ' + t('cardRate', { v: money(genIncome(i) * b2, true) }) + ' · ' + t('perOne', { v: money(genIncome(i) / S.owned[i] * b2, true) })
+      : genDesc(i) + ' ' + t('cardRateEach', { v: money(GENS[i].inc * repMult() * b2, true) });
     tb.querySelector('.bn').textContent = t('hireN', { n }); tb.querySelector('.bc').textContent = money(cost);
     const cant = cost > S.cash;
     tb.classList.toggle('cant', cant); tb.style.setProperty('--p', cant ? Math.max(0, Math.min(100, S.cash / cost * 100)).toFixed(1) + '%' : '0%');
@@ -1336,7 +1345,7 @@ function render(force) {
     const n = buyCount(i), cost = costN(i, n), nm = nextMilestone(S.owned[i]), pm = prevMilestone(S.owned[i]);
     c.own.textContent = S.owned[i] ? t('owned', { n: S.owned[i] }) : '';
     c.stat.textContent = S.owned[i]
-      ? t('cardRate', { v: money(genIncome(i) * b2, true) })
+      ? t('cardRate', { v: money(genIncome(i) * b2, true) }) + ' · ' + t('perOne', { v: money(genIncome(i) / S.owned[i] * b2, true) })
       : t('cardRateEach', { v: money(GENS[i].inc * repMult() * b2, true) });
     c.mbar.style.width = nm ? ((S.owned[i] - pm) / (nm - pm) * 100) + '%' : '100%';
     c.bl.textContent = nm ? t('cardBonus', { n: nm - S.owned[i] }) : t('cardAll');
@@ -1503,7 +1512,7 @@ $('introStart').addEventListener('click', () => {
 $('introHelp').addEventListener('click', () => { $('introModal').classList.remove('show'); openHelp('all', 'helpTitle', 'intro'); });
 $('helpBtn').addEventListener('click', () => openHelp('all', 'helpTitle', 'header'));
 $('helpClose').addEventListener('click', () => { $('helpModal').classList.remove('show'); finishIntro(); });
-const INFO_TITLES = { numbers: 'infoNumbersTitle', team: 'infoTeamTitle', xp: 'infoXpTitle', install: 'installTitle', compete: 'competeTitle' };
+const INFO_TITLES = { numbers: 'infoNumbersTitle', team: 'infoTeamTitle', xp: 'infoXpTitle', value: 'infoValueTitle', income: 'infoIncomeTitle', install: 'installTitle', compete: 'competeTitle' };
 document.querySelectorAll('[data-info]').forEach(b => b.addEventListener('click', () =>
   openHelp(b.dataset.info, INFO_TITLES[b.dataset.info], 'info_' + b.dataset.info)));
 $('stageBtn').addEventListener('click', () => { renderStages(); $('stagesModal').classList.add('show'); track('stages_opened'); });
@@ -1532,6 +1541,7 @@ $('exitBtn').addEventListener('click', () => {
   $('exitModal').classList.add('show');
 });
 $('exitCancel').addEventListener('click', () => $('exitModal').classList.remove('show'));
+$('exitXpHow').addEventListener('click', () => openHelp('xp', 'infoXpTitle', 'exit'));
 $('exitConfirm').addEventListener('click', () => {
   updatePiggy();
   if (Math.max(0, xpFor(S.totalEarned + S.piggy.amt) - S.rep) < 1) return;
